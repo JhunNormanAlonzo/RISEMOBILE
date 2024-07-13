@@ -1,0 +1,40 @@
+
+
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:rise/Resources/Pallete.dart';
+
+class AwesomeChannel {
+
+  NotificationChannel fireChannel = NotificationChannel(
+    channelKey: 'fire_channel',
+    channelName: 'Fire Notification',
+    channelDescription: 'Fire alarm triggered!',
+    importance: NotificationImportance.Max,
+    playSound: true,
+    enableVibration: true,
+    soundSource: 'resource://raw/res_danger',
+    defaultColor: Pallete.gradient3,
+    ledColor: Pallete.gradient4,
+    criticalAlerts: true,
+    enableLights: true,
+    channelShowBadge: true,
+  );
+
+
+  NotificationChannel callChannel = NotificationChannel(
+    channelKey: 'call_channel',
+    channelName: 'Call Notification',
+    channelDescription: 'Notification for call',
+    importance: NotificationImportance.Max,
+    playSound: true,
+    enableVibration: true,
+    soundSource: 'resource://raw/res_ringing',
+    defaultColor: Pallete.gradient3,
+    ledColor: Pallete.gradient4,
+    criticalAlerts: true,
+    enableLights: true,
+    channelShowBadge: true,
+  );
+}
+
+final awesomeChannel = AwesomeChannel();
