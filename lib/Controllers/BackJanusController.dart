@@ -64,6 +64,7 @@ class BackJanusController{
             channelKey: 'call_channel',
             title: "Call Notification",
             body: 'Call alarm!',
+            duration: const Duration(seconds: 10)
           ),
         );
 

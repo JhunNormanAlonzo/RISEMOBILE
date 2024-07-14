@@ -67,6 +67,7 @@ class BackgroundWebsocket {
                     channelKey: 'fire_channel',
                     title: "Fire Notification",
                     body: 'Fire alarm on $extension!',
+                    duration: const Duration(seconds: 10)
                   ),
                 );
               }else if(lifecycle == NotificationLifeCycle.Foreground){
