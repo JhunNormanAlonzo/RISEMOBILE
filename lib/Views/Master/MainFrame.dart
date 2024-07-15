@@ -6,6 +6,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -44,10 +46,9 @@ class MainFrameState extends State<MainFrame>{
 
   int selectedIndex = 0;
 
-  String janusConnection = "unregistered";
+  late String janusConnection;
 
   bool showSipStatus = false;
-
 
   @override
   void initState(){
@@ -61,13 +62,23 @@ class MainFrameState extends State<MainFrame>{
       IsolateNameServer.registerPortWithName(port.sendPort, 'mainIsolate');
       final navigationProvider =  Provider.of<NavigationProvider>(context, listen: false);
       final callProvider = Provider.of<CallProvider>(context, listen: false);
+      final callStatus = await storageController.getData("callStatus");
+      if(callStatus == 'incoming'){
 
+        setState(() {
+          janusConnection = "registered";
+        });
+      }else{
+        setState(() {
+          janusConnection = "unregistered";
+        });
+      }
       await storageController.storeData("janusConnection", janusConnection);
       janusConnection = await storageController.getData("janusConnection");
       debugPrint("Janus Connection is $janusConnection");
 
       // Listen for messages from the background isolate
-      port.listen((msg) {
+      port.listen((msg) async{
         debugPrint("Message is : $msg");
         if(msg == "SipRegisteredEvent"){
           setState(() {
@@ -84,7 +95,14 @@ class MainFrameState extends State<MainFrame>{
           myAudio.stop();
           navigationProvider.hideOnCallWidget();
         }else if(msg == "SipAcceptedEvent"){
-          navigationProvider.showOnCallWidget();
+          debugPrint("getting the call status");
+          final callStatusFromStorage = await storageController.getData("callStatus");
+          if(callStatusFromStorage == 'outgoing'){
+            navigationProvider.showOnCallWidget();
+          }else{
+            debugPrint("it is incoming call");
+          }
+
         }else if(msg == "SipIncomingCallEvent"){
           callProvider.setIn();
           navigationProvider.showOnCallWidget();
@@ -124,14 +142,16 @@ class MainFrameState extends State<MainFrame>{
         // Handle the data received from ForegroundService
       });
 
-      final mailboxNumber = await storageController.getData("mailboxNumber");
-      final dynamic callStatus = await storageController.getData('callStatus');
+
       if(callStatus == "incoming"){
+        setState(() {
+          showSipStatus = true;
+        });
         callProvider.setIn();
         navigationProvider.showOnCallWidget();
       }
     });
-    Future.delayed(const Duration(seconds: 3), () async{
+    Future.delayed(const Duration(seconds: 5), () async{
       debugPrint("auto registering on init state");
 
       final mailbox = await storageController.getData("mailboxNumber");
@@ -161,34 +181,23 @@ class MainFrameState extends State<MainFrame>{
 
 
 
-  Future<bool> isMailboxUser() async {
-    if(await canAuthenticate()){
-      final username = await storageController.getData("mailboxNumber");
-      final result = await api.getUserData(username, "Diavox123!");
-      print(result);
-    }
-    return false;
-  }
-
-  Future<bool> canAuthenticate() async {
-    try {
-      String username = await storageController.getData("mailboxNumber");
-      if (username.isNotEmpty) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return showSipStatus == false ?
     checkingSipRegistrationWidget() : frame();
   }
+
+
+
+  Future<bool> isMailboxUser() async {
+    String username = await storageController.getData("mailboxNumber");
+    if(username.isNotEmpty){
+      final dynamic result = await api.getUserData(username, "Diavox123!");
+      debugPrint(result);
+    }
+    return false;
+  }
+
 
 
   frame(){
@@ -204,8 +213,10 @@ class MainFrameState extends State<MainFrame>{
         const FireWidget(),
       ]
     ];
+    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
         actions: [
@@ -273,6 +284,7 @@ class MainFrameState extends State<MainFrame>{
                 }
               },
               child: Container(
+                margin: const EdgeInsets.all(8.0),
                 padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
                 decoration: BoxDecoration(
                   color: Colors.white, // Background color if needed
@@ -293,72 +305,252 @@ class MainFrameState extends State<MainFrame>{
               ),
             ),
           ],
-          IconButton(
-              onPressed: () async{
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      backgroundColor: Pallete.white.withOpacity(1),
-                      title: const Text("Diavox Rise", style: TextStyle(
-                          color: Pallete.gradient4,
-                          fontWeight: FontWeight.bold
-                      ),),
-                      content: const Text('Are you sure you want to shutdown the app?',
-                        style: TextStyle(
-                            color: Pallete.backgroundColor,
-                            fontWeight: FontWeight.bold
-                        ),),
-                      actions: <Widget>[
-                        Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              TextButton(
-                                onPressed: () async{
-                                  await storageController.storeData("janusConnection", "unregistered");
-                                  exit(0);
-                                },
-                                style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                ),
-                                child:  const Text('Shutdown',
-                                  style: TextStyle(
-                                    color: Pallete.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),),
-                              ),
-                              TextButton(
-                                child: const Text('Close', style: TextStyle(
-                                    color: Pallete.backgroundColor,
-                                    fontWeight: FontWeight.bold
-                                ),),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
+        ],
+      ),
+      drawer: Drawer(
+        backgroundColor: Pallete.gradient4,
+        child: SafeArea(
+          child: Container(
+            margin: const EdgeInsets.only(left: 40.0, right: 40.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 15),
+                Image.asset('assets/images/diavox.jpg'),
+                const SizedBox(height: 40),
+                FutureBuilder<dynamic>(
+                  future: storageController.getData("mailboxNumber"),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(
+                        snapshot.data!,
+                        style: const TextStyle(
+                          color: Pallete.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 50
+                        ),
+                      );
+                    } else if (snapshot.hasError) {
+                      return const Text('No Extension Detected');
+                    }
+                    return const CircularProgressIndicator();
+                  },
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: (){
+                          final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
+                          myAudio.stop();
+                          FlutterBackgroundService().invoke('stopVibration');
+                          navigationProvider.hideFireAlarmWidget();
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Pallete.backgroundColor
+                        ),
+
+                        label: const Text(
+                          "Stop Alarm",
+                          style: TextStyle(
+                              color: Pallete.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold
                           ),
                         ),
-                      ],
-                    );
-                  },
-                );
+                        icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: (){
+                          if (janusConnection == "registered") {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  backgroundColor: Pallete.white.withOpacity(1),
+                                  title: const Text("Un-Register ?", style: TextStyle(
+                                      color: Pallete.gradient4,
+                                      fontWeight: FontWeight.bold
+                                  ),),
+                                  content: const Text('Are you sure you want to unregister to webrtc?',
+                                    style: TextStyle(
+                                        color: Pallete.backgroundColor,
+                                        fontWeight: FontWeight.bold
+                                    ),),
+                                  actions: <Widget>[
+                                    Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () async{
+                                              await storageController.storeData("janusConnection", "unregistered");
+                                              setState(() {
+                                                janusConnection = "unregistered";
+                                              });
+                                              FlutterBackgroundService().invoke('unRegister');
+                                              Navigator.of(context).pop();
+                                            },
+                                            style: ButtonStyle(
+                                              backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                            ),
+                                            child:  const Text('Proceed',
+                                              style: TextStyle(
+                                                color: Pallete.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),),
+                                          ),
+                                          TextButton(
+                                            child: const Text('Close', style: TextStyle(
+                                                color: Pallete.backgroundColor,
+                                                fontWeight: FontWeight.bold
+                                            ),),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Pallete.backgroundColor
+                        ),
 
+                        label: const Text(
+                          "WebRTC Unregister",
+                          style: TextStyle(
+                              color: Pallete.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete, color: Pallete.white),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                          onPressed: () async{
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  backgroundColor: Pallete.white.withOpacity(1),
+                                  title: const Text("Diavox Rise", style: TextStyle(
+                                      color: Pallete.gradient4,
+                                      fontWeight: FontWeight.bold
+                                  ),),
+                                  content: const Text('Are you sure you want to shutdown the app?',
+                                    style: TextStyle(
+                                        color: Pallete.backgroundColor,
+                                        fontWeight: FontWeight.bold
+                                    ),),
+                                  actions: <Widget>[
+                                    Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () async{
+                                              await storageController.storeData("janusConnection", "unregistered");
+                                              exit(0);
+                                            },
+                                            style: ButtonStyle(
+                                              backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                            ),
+                                            child:  const Text('Shutdown',
+                                              style: TextStyle(
+                                                color: Pallete.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),),
+                                          ),
+                                          TextButton(
+                                            child: const Text('Close', style: TextStyle(
+                                                color: Pallete.backgroundColor,
+                                                fontWeight: FontWeight.bold
+                                            ),),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3),
+                        label: const Text(
+                          "Disconnect",
+                          style: TextStyle(
+                              color: Pallete.backgroundColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 60),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _scaffoldKey.currentState!.closeDrawer();
+                        },
+                        icon:  Icon(
+                          Icons.bar_chart_sharp,
+                          color: Pallete.white.withOpacity(0.7)
+                        ),
+                        label:  Text(
+                          "Close Sidebar",
+                          style: TextStyle(
+                              color: Pallete.white.withOpacity(0.7),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Pallete.backgroundColor.withOpacity(0.7),
+                          side:  const BorderSide(
+                            color: Pallete.white,
+                            width: 2
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
 
-              },
-              icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3)
-          ),
-          IconButton(
-              onPressed: () {
-                final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
-                myAudio.stop();
-                FlutterBackgroundService().invoke('stopVibration');
-                navigationProvider.hideFireAlarmWidget();
-              },
-              icon: const Icon(Icons.fire_extinguisher, color: Pallete.gradient3)
-          ),
-        ],
+        ),
       ),
       body:  SafeArea(
           child: Column(
@@ -435,6 +627,44 @@ class MainFrameState extends State<MainFrame>{
                   color: Colors.white,
                   size: 40,
                 ),
+                const SizedBox(height: 30),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              showSipStatus = true;
+                            });
+                          },
+                          icon:  Icon(
+                              Icons.bar_chart_sharp,
+                              color: Pallete.white.withOpacity(0.7)
+                          ),
+                          label:  Text(
+                            "Wait on Interface",
+                            style: TextStyle(
+                                color: Pallete.white.withOpacity(0.7),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Pallete.backgroundColor.withOpacity(0.7),
+                            side:  const BorderSide(
+                                color: Pallete.white,
+                                width: 2
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                )
+
               ],
             )
           )

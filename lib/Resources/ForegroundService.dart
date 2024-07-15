@@ -7,18 +7,13 @@ import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
-import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
 import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
-import 'package:rise/Resources/Janus/janus_client.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyVibration.dart';
-import 'package:web_socket_channel/io.dart';
 
 SendPort? sendPortToMainFrame;
 Future<void> initializeService() async {
@@ -39,18 +34,19 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   HttpOverrides.global = MyHttpOverrides();
 
-
-  List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
-  AwesomeNotifications().initialize(null, channels, debug: true);
-
-  AwesomeNotifications().setListeners(
-    onActionReceivedMethod: AwesomeNotificationHandler.onActionReceivedMethod,
-    onNotificationCreatedMethod: AwesomeNotificationHandler.onNotificationCreatedMethod,
-    onNotificationDisplayedMethod: AwesomeNotificationHandler.onNotificationDisplayedMethod,
-    onDismissActionReceivedMethod: AwesomeNotificationHandler.onDismissActionReceivedMethod,
-  );
-
   if (service is AndroidServiceInstance) {
+    List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
+    AwesomeNotifications().initialize(null, channels, debug: true);
+
+    AwesomeNotifications().setListeners(
+      onActionReceivedMethod: AwesomeNotificationHandler.onActionReceivedMethod,
+      onNotificationCreatedMethod: AwesomeNotificationHandler.onNotificationCreatedMethod,
+      onNotificationDisplayedMethod: AwesomeNotificationHandler.onNotificationDisplayedMethod,
+      onDismissActionReceivedMethod: AwesomeNotificationHandler.onDismissActionReceivedMethod,
+    );
+
+
+
     backWebsocket.listen();
     backJanus.initJanusClient();
 

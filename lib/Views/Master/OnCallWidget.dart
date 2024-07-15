@@ -47,6 +47,8 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   @override
   void initState() {
     super.initState();
+
+    debugPrint("Going to on call Screen");
     initAudioStreamType();
     _normalVolume();
 

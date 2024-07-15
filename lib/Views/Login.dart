@@ -47,7 +47,12 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    return isHaveAccessToken ? const MainFrame() : Scaffold(
+    return isHaveAccessToken ? const MainFrame() : loginWidget();
+  }
+
+
+   loginWidget(){
+    return Scaffold(
       body: SingleChildScrollView(
         child: Center(
           child: Column(

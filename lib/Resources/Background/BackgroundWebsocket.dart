@@ -86,16 +86,16 @@ class BackgroundWebsocket {
         }
       }, onDone: (){
         debugPrint("Disconnected wifi");
-        Timer.periodic(const Duration(seconds: 5), (timer) {
-          debugPrint("Wifi Status : ${_channel!.closeCode}");
-          if(_channel!.closeCode != null){
-            // _channel = IOWebSocketChannel.connect(Uri.parse('wss://$androidHost:6002/app/8edc987616d1eaa476e1?protocol=7&client=js&version=4.4.0&flash=false'));
-            debugPrint("Reconnecting wifi");
-          }
-        });
+        // Timer.periodic(const Duration(seconds: 5), (timer) {
+        //   debugPrint("Wifi Status : ${_channel!.closeCode}");
+        //   if(_channel!.closeCode != null){
+        //     // _channel = IOWebSocketChannel.connect(Uri.parse('wss://$androidHost:6002/app/8edc987616d1eaa476e1?protocol=7&client=js&version=4.4.0&flash=false'));
+        //     debugPrint("Reconnecting wifi");
+        //   }
+        // });
         // Handle the channel being closed here
       }, onError: (error){
-        debugPrint("Reconnecting wifi");
+        debugPrint("Reconnecting wifi $error");
       });
 
       debugPrint("Websocket Started...");

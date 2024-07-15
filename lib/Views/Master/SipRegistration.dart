@@ -25,7 +25,7 @@ class SettingState extends State<Settings> {
 
   final TextEditingController _mailbox = TextEditingController();
   final TextEditingController _password = TextEditingController();
-
+  bool showSidebar = true;
   // dynamic _setState;
   @override
   void initState() {
@@ -47,14 +47,14 @@ class SettingState extends State<Settings> {
           children: [
             const SizedBox(height: 30),
             const Center(
-             child:  Text(
-               "WebRTC Registration",
-               style: TextStyle(
-                   color: Pallete.white,
-                 fontSize: 20,
-                 fontWeight: FontWeight.bold
-               ),
-             ),
+              child:  Text(
+                "WebRTC Registration",
+                style: TextStyle(
+                    color: Pallete.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold
+                ),
+              ),
             ),
             const SizedBox(height: 50),
             InputField(placeholder: "Mailbox Number", controller: _mailbox, inputType: TextInputType.number),

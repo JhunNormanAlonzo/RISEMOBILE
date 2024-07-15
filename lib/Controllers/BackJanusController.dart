@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/Janus/janus_client.dart';
-import 'package:rise/Resources/Janus/janus_sip_manager.dart';
+
 
 class BackJanusController{
   static final BackJanusController _instance = BackJanusController._internal();
@@ -15,6 +14,7 @@ class BackJanusController{
   BackJanusController._internal();
 
   JanusSipPlugin? sip;
+  RTCSessionDescription? rtc;
   MediaStream? remoteVideoStream, remoteAudioStream, localStream, streamTrack;
   final RTCVideoRenderer _remoteVideoRenderer = RTCVideoRenderer();
   late JanusClient j;
@@ -23,6 +23,7 @@ class BackJanusController{
   RTCTrackEvent? rtcTrackEvent;
   RTCPeerConnection? pc;
   RemoteTrack? remoteTrack;
+
 
   final StreamController<String> _messageStreamController = StreamController<String>.broadcast();
   Stream<String> get messageStream => _messageStreamController.stream;
@@ -45,108 +46,125 @@ class BackJanusController{
     localStream = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
   }
 
+
+  printServerInfo(){
+
+  }
+
+
   Future<void> initJanusClient() async {
+    final gateway = await storageController.getData("gateway");
+    if (sip == null) {
+      final ws = WebSocketJanusTransport(url: gateway);
 
-    await JanusSipManager.instance.initializeSip();
-    sip = JanusSipManager.instance.sipInstance;
+      ws.channel?.stream.listen((event) {
 
-    sip?.typedMessages?.listen((even) async {
-      Object data = even.event.plugindata?.data;
+      });
 
-
-      if (data is SipIncomingCallEvent) {
-        debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
-
-        storageController.storeData("callStatus", "incoming");
-        AwesomeNotifications().createNotification(
-          content: NotificationContent(
-            id: 2,
-            channelKey: 'call_channel',
-            title: "Call Notification",
-            body: 'Call alarm!',
-            duration: const Duration(seconds: 10)
-          ),
-        );
-
-        await Future.delayed(const Duration(seconds: 1));
+      final j = JanusClient(transport: ws, iceServers: null, isUnifiedPlan: true);
+      session = await j.createSession();
 
 
-        debugPrint("Executing delayed WebRTC initialization and jsep handling");
-        await sip?.initializeWebRTCStack();
-        await sip?.handleRemoteJsep(even.jsep);
-        debugPrint("sending set ready");
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
+      sip = await session!.attach<JanusSipPlugin>();
+
+      sip?.typedMessages?.listen((even) async {
+        Object data = even.event.plugindata?.data;
 
 
-        debugPrint("--------------------------------------INCOMING CALL ALERT DONE----------------------------------------------");
-      }
-      if (data is SipAcceptedEvent) {
-        debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT RECEIVED----------------------------------------------");
-        await sip?.handleRemoteJsep(even.jsep);
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipAcceptedEvent');
-        debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT DONE----------------------------------------------");
-        // navigationProvider.showOnCallWidget();
-      }
-      if (data is SipHangupEvent) {
-        await stopAllTracksAndDispose(localStream);
-        // myAudio.stop();
+        if (data is SipIncomingCallEvent) {
+          debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
+          storageController.storeData("callStatus", "incoming");
+          final lifecycle = await AwesomeNotifications().getAppLifeCycle();
 
-        debugPrint("--------------------------------------HANGUP EVENT RECEIVED----------------------------------------------");
-        storageController.storeData("callStatus", "empty");
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipHangupEvent');
-        AwesomeNotifications().cancel(2);
-        debugPrint("--------------------------------------HANGUP EVENT DONE----------------------------------------------");
-        // navigationProvider.hideOnCallWidget();
-      }
-      if(data is SipRegisteredEvent){
-        debugPrint("--------------------------------------REGISTERED EVENT RECEIVED----------------------------------------------");
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipRegisteredEvent');
-        storageController.storeData("janusConnection", "registered");
-        debugPrint("--------------------------------------REGISTERED EVENT DONE----------------------------------------------");
-      }
-
-      if(data is SipCallingEvent){
-        debugPrint("--------------------------------------Setting callStatus to Outgoing----------------------------------------------");
-        storageController.storeData("callStatus", "outgoing");
-        debugPrint("--------------------------------------SipCallingEvent EVENT RECEIVED----------------------------------------------");
-      }
-
-      if(data is SipMissedCallEvent){
-        debugPrint("--------------------------------------Setting callStatus to empty----------------------------------------------");
-        storageController.storeData("callStatus", "empty");
-        debugPrint("--------------------------------------SipMissedCallEvent EVENT RECEIVED----------------------------------------------");
-      }
-
-      if(data is SipProceedingEvent){
-        debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED----------------------------------------------");
-      }
-
-      if(data is SipProgressEvent){
-        debugPrint("--------------------------------------SipProgressEvent EVENT RECEIVED----------------------------------------------");
-
-      }
-
-      if(data is SipRingingEvent){
-        debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED----------------------------------------------");
-      }
+          if(lifecycle == NotificationLifeCycle.Background){
+            AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 2,
+                  channelKey: 'call_channel',
+                  title: "Call Notification",
+                  body: 'Incoming call!',
+                  duration: const Duration(seconds: 10)
+              ),
+            );
+          }
 
 
-      if(data is SipAcceptedEventResult){
-        debugPrint("--------------------------------------SipAcceptedEventResult EVENT RECEIVED----------------------------------------------");
-      }
+          await sip?.initializeWebRTCStack();
+          IsolateNameServer.lookupPortByName('backIsolate')?.send('SipIncomingCallEvent');
+
+          debugPrint("Executing delayed WebRTC initialization and jsep handling");
+
+          rtc = even.jsep;
+          debugPrint("sending set ready");
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
 
 
+          debugPrint("--------------------------------------INCOMING CALL ALERT DONE----------------------------------------------");
+        }
+        if (data is SipAcceptedEvent) {
+          debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT RECEIVED----------------------------------------------");
+          await sip?.handleRemoteJsep(even.jsep);
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipAcceptedEvent');
+          debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT DONE----------------------------------------------");
+          // navigationProvider.showOnCallWidget();
+        }
+        if (data is SipHangupEvent) {
+          await stopAllTracksAndDispose(localStream);
+          // myAudio.stop();
 
-    }, onError: (error) async {
-      if (error is JanusError) {
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send('$error');
-        // toast.error(_context!, error.error);
-      }
-    });
+          debugPrint("--------------------------------------HANGUP EVENT RECEIVED----------------------------------------------");
+          storageController.storeData("callStatus", "empty");
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipHangupEvent');
+          AwesomeNotifications().cancel(2);
+          debugPrint("--------------------------------------HANGUP EVENT DONE----------------------------------------------");
+          // navigationProvider.hideOnCallWidget();
+        }
+        if (data is SipRegisteredEvent) {
+          debugPrint("--------------------------------------REGISTERED EVENT RECEIVED----------------------------------------------");
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send(
+              'SipRegisteredEvent');
+          storageController.storeData("janusConnection", "registered");
+          debugPrint("--------------------------------------REGISTERED EVENT DONE----------------------------------------------");
+        }
+
+        if (data is SipCallingEvent) {
+          debugPrint("--------------------------------------Setting callStatus to Outgoing----------------------------------------------");
+          storageController.storeData("callStatus", "outgoing");
+          debugPrint("--------------------------------------SipCallingEvent EVENT RECEIVED----------------------------------------------");
+        }
+
+        if (data is SipMissedCallEvent) {
+          debugPrint("--------------------------------------Setting callStatus to empty----------------------------------------------");
+          storageController.storeData("callStatus", "empty");
+          debugPrint("--------------------------------------SipMissedCallEvent EVENT RECEIVED----------------------------------------------");
+        }
+
+        if (data is SipProceedingEvent) {
+          debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED----------------------------------------------");
+        }
+
+        if (data is SipProgressEvent) {
+          debugPrint("--------------------------------------SipProgressEvent EVENT RECEIVED----------------------------------------------");
+        }
+
+        if (data is SipRingingEvent) {
+          debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED----------------------------------------------");
+        }
+
+
+        if (data is SipAcceptedEventResult) {
+          debugPrint("--------------------------------------SipAcceptedEventResult EVENT RECEIVED----------------------------------------------");
+        }
+      }, onError: (error) async {
+        if (error is JanusError) {
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('$error');
+          // toast.error(_context!, error.error);
+        }
+      });
+    }
   }
 
   hangup() async{
-    sip = JanusSipManager.instance.sipInstance;
     await sip?.hangup();
   }
 
@@ -229,18 +247,19 @@ class BackJanusController{
   }
 
   accept() async{
-    // localStream = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
+    if (rtc == null) {
+      throw Exception("RTCSessionDescription not available. Ensure proper retrieval from incoming call event.");
+    }
+    final see = await rtc;
+
+    await sip?.handleRemoteJsep(rtc);
     await localStreamInitializer();
+
     var answer = await sip?.createAnswer();
     await sip?.accept(sessionDescription: answer);
+    debugPrint("**********************************Call Accepted*************************************");
   }
 
-  Future<void> stopAllTracksAndDispose(MediaStream? stream) async {
-    if (stream != null) {
-      stream.getTracks().forEach((track) => track.stop());
-      await stream.dispose();
-    }
-  }
 }
 
 final backJanus = BackJanusController();

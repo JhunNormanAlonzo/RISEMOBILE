@@ -56,74 +56,24 @@ class _MessagesWidgetState extends State<MessagesWidget> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Messages Screen ${Provider.of<CallProvider>(context).inOut == true ? 'incoming' : 'outgoing'}", style: const TextStyle(
-            color: Colors.red
-          ),),
+          const Text(
+            "Coming Soon ...",
+            style: TextStyle(
+              color: Pallete.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold
+            ),
+          ),
           const SizedBox(height: 30),
           ElevatedButton(
-            onPressed: () async{
-              final navigationProvider =  Provider.of<NavigationProvider>(context, listen: false);
-              // navigationProvider.setExtension("805");
-              navigationProvider.showFireAlarmWidget();
-            },
-            child: const Text("Alert"),
-          ),
-          ElevatedButton(
-            onPressed: (){
-              final navigationProvider =  Provider.of<NavigationProvider>(context, listen: false);
-              navigationProvider.hideOnCallWidget();
-              myAudio.stop();
-              vibrator.stop();
-            },
-            child: const Text("Stop"),
-          ),
-          ElevatedButton(
-            onPressed: (){
-              fileController.download("file to download", context);
-            },
-            child: const Text("Download"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              myAudio.danger();
-            },
-            child: const Text("Alarm Manager"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              FlutterBackgroundService().invoke("playRingtone");
-            },
-            child: const Text("Play Native Ringtone"),
-          ),
-          ElevatedButton(
             onPressed: () async {
-              storageController.removeData("password");
-              // Directory? appDocDir = await getExternalStorageDirectory();
-              // String appDocPath = '${appDocDir?.path}/rise';
-              // await Directory(appDocPath).create(recursive: true);
-              // debugPrint(appDocPath);
-              // File file1 = File('$appDocPath/ringing.mp3');
-              // File file2 = File('$appDocPath/danger.mp3');
-              // if (!await file1.exists()) {
-              //   ByteData data = await rootBundle.load('assets/sounds/ringing.mp3');
-              //   List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-              //   await file1.writeAsBytes(bytes);
-              // }
-              //
-              // if (!await file2.exists()) {
-              //   ByteData data = await rootBundle.load('assets/sounds/danger.mp3');
-              //   List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-              //   await file2.writeAsBytes(bytes);
-              // }
+              // storageController.removeData("mailboxNumber");
+              // storageController.storeData("callStatus", "outgoing");
+              final etst = await storageController.getData("callStatus");
+              debugPrint("the call status is is $etst");
             },
-            child: const Text("Storage"),
-          ),
-
-          ElevatedButton(
-            onPressed: () async {
-
-            },
-            child: const Text("Play"),
+            // child: const Text("Clear Extension"),
+            child: const Text("Show call status "),
           ),
         ],
       ),

@@ -68,6 +68,7 @@ class _DialpadWidgetState extends State<DialpadWidget> {
     }
     debugPrint("calling : $inputNumber");
     // janus.makeCall(inputNumber, androidHost);
+    storageController.storeData("callStatus", "outgoing");
     FlutterBackgroundService().invoke('makeCall',{
       'inputNumber' : inputNumber,
       'androidHost' : androidHost,
