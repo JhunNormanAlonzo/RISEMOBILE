@@ -13,6 +13,7 @@ import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Controllers/FileController.dart';
 import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/MyVibration.dart';
@@ -69,8 +70,10 @@ class _MessagesWidgetState extends State<MessagesWidget> {
             onPressed: () async {
               // storageController.removeData("mailboxNumber");
               // storageController.storeData("callStatus", "outgoing");
-              final etst = await storageController.getData("callStatus");
-              debugPrint("the call status is is $etst");
+              // final etst = await storageController.getData("callStatus");
+              // debugPrint("the call status is is $etst");
+              final directory = await getApplicationDocumentsDirectory();
+              debugPrint("the path is $directory");
             },
             // child: const Text("Clear Extension"),
             child: const Text("Show call status "),

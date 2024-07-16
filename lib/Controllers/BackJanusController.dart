@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/Janus/janus_client.dart';
 
 
@@ -74,6 +75,7 @@ class BackJanusController{
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
           storageController.storeData("callStatus", "incoming");
+          await riseDatabase.setActive("incoming");
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
 
           if(lifecycle == NotificationLifeCycle.Background){
@@ -233,6 +235,7 @@ class BackJanusController{
   }
 
   makeCall(mailbox, androidHost) async {
+    await riseDatabase.setActive("outgoing");
     var newValue = "sip:$mailbox@$androidHost";
     debugPrint("Passing to make call : $newValue");
     await sip?.initializeWebRTCStack();

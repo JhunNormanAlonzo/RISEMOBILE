@@ -17,6 +17,7 @@ import 'package:rise/Components/InputField.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/ForegroundService.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/MyToast.dart';
@@ -96,11 +97,9 @@ class MainFrameState extends State<MainFrame>{
           navigationProvider.hideOnCallWidget();
         }else if(msg == "SipAcceptedEvent"){
           debugPrint("getting the call status");
-          final callStatusFromStorage = await storageController.getData("callStatus");
-          if(callStatusFromStorage == 'outgoing'){
+          final outgoing = await riseDatabase.getStatus("outgoing");
+          if(outgoing == 1){
             navigationProvider.showOnCallWidget();
-          }else{
-            debugPrint("it is incoming call");
           }
 
         }else if(msg == "SipIncomingCallEvent"){
