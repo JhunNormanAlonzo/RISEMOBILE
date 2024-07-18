@@ -152,6 +152,7 @@ class JanusSession {
     return plugin as T;
   }
 
+
   void dispose() {
     if (_keepAliveTimer != null) {
       _keepAliveTimer!.cancel();

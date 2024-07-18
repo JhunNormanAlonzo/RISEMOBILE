@@ -30,6 +30,7 @@ class CoreController{
     );
 
     if(response.statusCode == 200){
+      storageController.storeData("loginPassword", password);
       Map<String, dynamic> data = jsonDecode(response.body);
       final accessToken = data['access_token'];
       await storageController.storeData("accessToken", accessToken);
@@ -62,9 +63,6 @@ class CoreController{
     }
     return status;
   }
-
 }
-
-
 
 final coreController = CoreController();

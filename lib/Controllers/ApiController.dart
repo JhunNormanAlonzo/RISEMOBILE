@@ -4,8 +4,10 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_encrypt_plus/flutter_encrypt_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/GeneralConfiguration.dart';
 import 'package:rise/Resources/MyToast.dart';
 
 class ApiController{
@@ -37,17 +39,36 @@ class ApiController{
         await storageController.storeData("androidHost", androidHost);
       }
       return androidHost;
-
-
   }
 
-  Future<Map<String, dynamic>>getUserData(username, password) async{
+  //Storing needed user data to local storage.
+  Future<dynamic> getUserData() async {
+    final mailboxNumber = await storageController.getData("mailboxNumber");
+    final loginPassword = await storageController.getData("loginPassword");
+    debugPrint("mailbox : $mailboxNumber");
+    debugPrint("login password : $loginPassword");
     final base = await storageController.getData("base");
-    final route = "$base/api/mobile/user_data/$username/$password";
+    final route = "$base/api/mobile/user_data/$mailboxNumber/$loginPassword";
+    debugPrint("route : $route");
     final response = await http.get(Uri.parse(route), headers: await getHeaders());
-    Map<String, dynamic> data = jsonDecode(response.body);
-    return data;
+    final userData = response.body;
+
+    Map<String, dynamic> parsedJson = jsonDecode(userData);
+
+    final password = encrypt.decodeString(parsedJson['mailbox']['password'], GeneralConfiguration().getSalt);
+    await storageController.storeData("password", password);
+    debugPrint("user data start");
+    debugPrint(password);
+    debugPrint("user data end");
   }
+
+  // Future<Map<String, dynamic>>getUserData(username, password) async{
+  //   final base = await storageController.getData("base");
+  //   final route = "$base/api/mobile/user_data/$username/$password";
+  //   final response = await http.get(Uri.parse(route), headers: await getHeaders());
+  //   Map<String, dynamic> data = jsonDecode(response.body);
+  //   return data;
+  // }
 
 
   Future<Map<String, dynamic>>getMe() async {

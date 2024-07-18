@@ -62,7 +62,7 @@ class _LoginState extends State<Login> {
               const SizedBox(height: 40),
               const Center(
                 child:  Text(
-                  "Diavox Registration",
+                  "SIP Registration",
                   style: TextStyle(
                       color: Pallete.white,
                       fontSize: 30,
@@ -96,6 +96,7 @@ class _LoginState extends State<Login> {
                     final status = await coreController.generateAccessToken(username, password);
                     // end storing access token and mailbox number of 200 outside.
                     if (status == 200) {
+                      await api.getUserData();
                       Navigator.push(
                         // ignore: use_build_context_synchronously
                         context,
