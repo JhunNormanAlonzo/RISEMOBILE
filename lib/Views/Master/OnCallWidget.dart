@@ -26,7 +26,7 @@ class OnCallWidget extends StatefulWidget {
 
 class _OnCallWidgetState extends State<OnCallWidget> {
   bool isMuted = false,
-      isLoudSpeaker= false,
+      isLoudSpeaker= true,
       isIncomingCall = false,
       isOngoingCall = false;
 
@@ -47,34 +47,8 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   @override
   void initState() {
     super.initState();
-    initAudioStreamType();
-    _normalVolume();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async{
-      // final callStatus = await storageController.getData('callStatus');
-      // debugPrint("call status is $callStatus");
-      // if(callStatus == "outgoing"){
-      //   setState(() {
-      //     debugPrint("setting call state to ready");
-      //     isReady = true;
-      //   });
-      // }
-
-
-      // IsolateNameServer.removePortNameMapping('callIsolate');
-      // IsolateNameServer.registerPortWithName(port.sendPort, 'callIsolate');
-      // port.listen((msg) {
-      //   debugPrint(msg);
-      //   if(msg == "setReady"){
-      //     debugPrint("setting call state to ready");
-      //     setState(() {
-      //       isReady = true;
-      //     });
-      //   }
-      // });
-    });
-
-
+    // initAudioStreamType();
+    // _loudVolume();
 
 
   }
@@ -179,6 +153,7 @@ class _OnCallWidgetState extends State<OnCallWidget> {
                         OnCallButton(
                           icon: !isMuted ? Icons.mic : Icons.mic_off, color: Colors.white, size: 50,
                           onPressed: (){
+
                             FlutterBackgroundService().invoke('muteUnmute',{
                               'flag' : '0',
                               'isMuted' : isMuted
@@ -221,148 +196,6 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     );
 
 
-    // return isReady ? Scaffold(
-    //   body: Column(
-    //     children: <Widget>[
-    //       Container(
-    //         decoration: const BoxDecoration(
-    //           gradient: LinearGradient(
-    //             begin: Alignment.topLeft,
-    //             end: Alignment.bottomLeft,
-    //             colors: [Pallete.gradient4, Pallete.backgroundColor],
-    //           ),
-    //         ),
-    //         child: Column(
-    //           mainAxisAlignment: MainAxisAlignment.center,
-    //           children: [
-    //             Row(
-    //               mainAxisAlignment: MainAxisAlignment.center,
-    //               children: [
-    //                 Column(
-    //                   children: [
-    //                     const Icon(Icons.person, size: 120, color: Colors.white),
-    //                     LoadingAnimationWidget.staggeredDotsWave(
-    //                       color: Colors.white,
-    //                       size: 40,
-    //                     ),
-    //                   ],
-    //                 )
-    //               ],
-    //             ),
-    //             Row(
-    //               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    //               children: [
-    //                 Column(
-    //                   children: [
-    //                     OnCallButton(
-    //                       icon: !isLoudSpeaker ? Icons.volume_down : Icons.volume_up, color: Colors.white, size: 50,
-    //                       onPressed: (){
-    //                         if(!isLoudSpeaker){
-    //                           setState(() {
-    //                             isLoudSpeaker = true;
-    //                             _loudVolume();
-    //                           });
-    //                         }else{
-    //                           setState(() {
-    //                             isLoudSpeaker = false;
-    //                             _normalVolume();
-    //                           });
-    //                         }
-    //                       },
-    //                     )
-    //                   ],
-    //                 ),
-    //                 Column(
-    //                   children: [
-    //                     Row(
-    //                       children: [
-    //                         if(callProvider.inOut == callProvider.incoming() && showAcceptButton)
-    //                           ...[
-    //                             OnCallButton(
-    //                               icon: Icons.phone_callback, color: Pallete.gradient4, size: 50,
-    //                               onPressed: (){
-    //                                 myAudio.stop();
-    //                                 AwesomeNotifications().cancel(2);
-    //                                 FlutterBackgroundService().invoke('accept');
-    //                                 setState(() {
-    //                                   showAcceptButton = false;
-    //                                 });
-    //                               },
-    //                             ),
-    //                             const SizedBox(width: 50),
-    //                           ],
-    //                         OnCallButton(
-    //                           icon: Icons.call_end, color: Colors.red, size: 50,
-    //                           onPressed: () async {
-    //                             final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
-    //                             FlutterBackgroundService().invoke('hangup');
-    //                             FlutterBackgroundService().invoke('decline');
-    //                             navigationProvider.hideOnCallWidget();
-    //                             myAudio.stop();
-    //                           },
-    //                         ),
-    //                       ],
-    //                     )
-    //                   ],
-    //                 ),
-    //                 Column(
-    //                   children: [
-    //                     OnCallButton(
-    //                       icon: !isMuted ? Icons.mic : Icons.mic_off, color: Colors.white, size: 50,
-    //                       onPressed: (){
-    //                         FlutterBackgroundService().invoke('muteUnmute',{
-    //                           'flag' : '0',
-    //                           'isMuted' : isMuted
-    //                         });
-    //                         setState(() {
-    //                           isMuted =! isMuted;
-    //                         });
-    //                       },
-    //                     )
-    //                   ],
-    //                 )
-    //               ],
-    //             ),
-    //           ],
-    //         ),
-    //       ),
-    //       Expanded(
-    //         child: Padding(
-    //           padding: const EdgeInsets.only(top: 20, left: 60, right: 60),
-    //           child: GridView.builder(
-    //             itemCount: dialPadNumbers.length,
-    //             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-    //               crossAxisCount: 3,
-    //               crossAxisSpacing: 10.0,
-    //               mainAxisSpacing: 1.0,
-    //               childAspectRatio: 1,
-    //             ),
-    //             itemBuilder: (context, index) {
-    //               String number = dialPadNumbers[index];
-    //               return DialButton(
-    //                 number: number,
-    //                 onPressed: () => onNumberTapped(number),
-    //               );
-    //             },
-    //           ),
-    //         ),
-    //       ),
-    //     ],
-    //   ),
-    // ) :  Center(
-    //   child:Column(
-    //     mainAxisAlignment: MainAxisAlignment.center, // Center horizontally
-    //     crossAxisAlignment: CrossAxisAlignment.center, // Center vertically
-    //     children: [
-    //       const Text("Initializing. . .", style: TextStyle(color: Pallete.white, fontSize: 20, fontWeight: FontWeight.bold),),
-    //       const SizedBox(height: 20),
-    //       LoadingAnimationWidget.inkDrop(
-    //         color: Pallete.gradient4,
-    //         size: 40,
-    //       ),
-    //     ],
-    //   ),
-    // );
   }
 
 

@@ -31,7 +31,7 @@ Future<void> main() async {
 
 
 
-  List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
+  List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel, awesomeChannel.connectionChannel];
   AwesomeNotifications().initialize(null, channels, debug: true);
 
   AwesomeNotifications().setListeners(

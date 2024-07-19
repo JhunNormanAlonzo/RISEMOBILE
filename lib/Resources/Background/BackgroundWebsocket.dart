@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
@@ -15,16 +16,17 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class BackgroundWebsocket {
-  static final BackgroundWebsocket _instance = BackgroundWebsocket._internal();
-  factory BackgroundWebsocket() => _instance;
   BackgroundWebsocket._internal();
+  static final BackgroundWebsocket _instance = BackgroundWebsocket._internal();
+  factory BackgroundWebsocket() {
+    return _instance;
+  }
+
+
   WebSocketChannel? _channel;
 
-  BuildContext? _context;
 
-  void setContext(BuildContext context){
-    _context = context;
-  }
+
 
   Future<void> listen() async {
     final androidHost = await api.getAndroidHost();
@@ -83,12 +85,17 @@ class BackgroundWebsocket {
         debugPrint("Websocket Initialization");
       }
     });
+
+  }
+
+  disconnect(){
+    channel!.sink.close();
   }
 
 
 
-
   Stream get stream => _channel!.stream;
+  WebSocketChannel? get channel => _channel;
 }
 
-final backWebsocket = BackgroundWebsocket();
+

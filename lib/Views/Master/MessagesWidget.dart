@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
 import 'package:rise/Resources/Function.dart';
 import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/Pallete.dart';
@@ -81,6 +82,21 @@ class _MessagesWidgetState extends State<MessagesWidget> {
              invoke('disposeJanusClient');
             },
             child: const Text("Janus Disconnect "),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              invoke('stopAllTracks');
+            },
+            child: const Text("stop tracks"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              FlutterBackgroundService().invoke('muteUnmute',{
+                'flag' : '0',
+                'isMuted' : true
+              });
+            },
+            child: const Text("true"),
           ),
         ],
       ),

@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -85,7 +86,18 @@ class MainFrameState extends State<MainFrame>{
           setState(() {
             debugPrint("Setting state if registered");
             janusConnection = "registered";
+
           });
+          AwesomeNotifications().cancel(3);
+          await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 3,
+                channelKey: 'connection_channel',
+                title: "SIP Notification",
+                body: 'Connected',
+                duration: const Duration(seconds: 10)
+            ),
+          );
           debugPrint("equal to SipRegisteredEvent");
           // toast.success(context, "SIP registered successfully");
           setState(() {

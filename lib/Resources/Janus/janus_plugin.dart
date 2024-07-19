@@ -79,14 +79,29 @@ class JanusPlugin {
     }
     _context._logger.finest('webRTC stack intialized');
 
-    RTCPeerConnection peerConnection =
-        await createPeerConnection(_webRtcConfiguration!, {});
+    RTCPeerConnection peerConnection = await createPeerConnection(_webRtcConfiguration!, {});
 
     print("****** PEERCONNECTION in WEBRTCSTACK $peerConnection");
 
     peerConnection.onRenegotiationNeeded = () {
       _renegotiationNeededController?.sink.add(true);
     };
+
+    // peerConnection.onConnectionState = (RTCPeerConnectionState state) {
+    //   var backJanus = BackJanusController();
+    //   print('Connection state change: $state');
+    //   switch(state){
+    //     case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
+    //       backJanus.hangup();
+    //       break;
+    //     case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
+    //       backJanus.hangup();
+    //       break;
+    //     default:
+    //       print('WebRTC connection state: $state');
+    //       break;
+    //   }
+    // };
     //unified plan webrtc tracks emitter
     _handleUnifiedWebRTCTracksEmitter(peerConnection);
     //send ice candidates to janus server on this specific handle
@@ -469,7 +484,8 @@ class JanusPlugin {
 
   /// It allows you to set Remote Description on internal peer connection, Received from janus server
   Future<void> handleRemoteJsep(RTCSessionDescription? data) async {
-    // var state = webRTCHandle?.peerConnection?.signalingState;
+    var state = webRTCHandle?.peerConnection?.signalingState;
+    print("signaling state : $state");
     if (data != null) {
       await webRTCHandle?.peerConnection?.setRemoteDescription(data);
     }

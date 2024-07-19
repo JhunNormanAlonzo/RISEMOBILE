@@ -12,13 +12,18 @@ import 'package:rise/Resources/Pallete.dart';
 
 
 class BackJanusController{
-  BackJanusController._();
-  static final BackJanusController _instance = BackJanusController._();
-  static BackJanusController get instance => _instance;
+  BackJanusController._internal();
+  static final BackJanusController _instance = BackJanusController._internal();
+  factory BackJanusController() {
+    return _instance;
+  }
+
+
+
 
   JanusSipPlugin? sip;
   RTCSessionDescription? rtc;
-  MediaStream? remoteVideoStream, remoteAudioStream, localStream, streamTrack;
+  MediaStream? mediaStream;
   final RTCVideoRenderer _remoteVideoRenderer = RTCVideoRenderer();
   late JanusClient j;
   late WebSocketJanusTransport ws;
@@ -39,21 +44,16 @@ class BackJanusController{
     _messageStreamController.close();
   }
 
-  BuildContext? _context;
-
-  void setContext(BuildContext context){
-    _context = context;
-  }
 
   localStreamInitializer() async{
-    localStream = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
-
+     mediaStream =  await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
   }
 
 
 
 
   Future<void> initJanusClient() async {
+    await disconnectJanusClient();
     debugPrint("****************************initializing janus client...******************************");
     final gateway = await storageController.getData("gateway");
     if (sip == null) {
@@ -69,7 +69,9 @@ class BackJanusController{
       sip = await session!.attach<JanusSipPlugin>();
       sip?.typedMessages?.listen((even) async {
         Object data = even.event.plugindata?.data;
-
+        print("data received start");
+        print(data);
+        print("data received start");
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
           storageController.storeData("callStatus", "incoming");
@@ -114,9 +116,10 @@ class BackJanusController{
           // navigationProvider.showOnCallWidget();
         }
         if (data is SipHangupEvent) {
-          await stopAllTracksAndDispose(localStream);
-          // myAudio.stop();
-
+          print("local stream start");
+          print(mediaStream);
+          print("local stream end");
+          await stopAllTracksAndDispose(mediaStream);
           riseDatabase.setAccepted(0);
           debugPrint("--------------------------------------HANGUP EVENT RECEIVED----------------------------------------------");
           storageController.storeData("callStatus", "empty");
@@ -164,16 +167,23 @@ class BackJanusController{
     }
   }
 
-  // Future<void> disconnectSession() async {
-  //   if (session != null) {
-  //     await session.destroy();
-  //     _session = null;
-  //   }
-  //   if (_janusClient != null) {
-  //     await _janusClient.close();
-  //     _janusClient = null;
-  //   }
-  // }
+
+  Future<void> disconnectJanusClient() async {
+    try{
+      if (session != null) {
+
+        sip = null;
+        debugPrint("Janus SIP plugin detached.");
+
+        session.dispose();
+        debugPrint("Janus session destroyed.");
+      }
+    }catch(e){
+      print(e);
+    }
+
+  }
+
 
   hangup() async{
     debugPrint("**********************************Hangup Call*************************************");
@@ -188,8 +198,6 @@ class BackJanusController{
 
   Future<void> registerUser(String ip, String username, String password) async {
     debugPrint("Triggering registration...");
-    // localStream = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
-    // await localStreamInitializer();
     await sip?.register("sip:$username@$ip",
         forceUdp: true,
         rfc2543Cancel: true,
@@ -209,8 +217,6 @@ class BackJanusController{
       debugPrint("password is : $password");
       debugPrint("androidHost is : $androidHost");
       debugPrint("Triggering registration...");
-      // localStream = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
-      // await localStreamInitializer();
       await sip?.register("sip:$mailbox@$androidHost",
           forceUdp: true,
           rfc2543Cancel: true,
@@ -229,8 +235,10 @@ class BackJanusController{
   }
 
   Future<void> stopTracks() async {
-    await stopAllTracksAndDispose(remoteAudioStream);
-    await stopAllTracksAndDispose(remoteVideoStream);
+    print("local stream start");
+    print(mediaStream);
+    print("local stream end");
+    await stopAllTracksAndDispose(mediaStream);
   }
 
   Future<void> cleanUpWebRTCStuff() async {
@@ -273,6 +281,4 @@ class BackJanusController{
     await sip?.accept(sessionDescription: answer);
     debugPrint("**********************************Call Accepted*************************************");
   }
-
-
 }

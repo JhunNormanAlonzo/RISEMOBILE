@@ -35,12 +35,12 @@ Future<void> initializeService() async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   HttpOverrides.global = MyHttpOverrides();
-
+  var backWebsocket = BackgroundWebsocket();
   if (service is AndroidServiceInstance) {
 
-    final backJanus = BackJanusController.instance;
+    var backJanus = BackJanusController();
 
-    List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
+    List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel, awesomeChannel.connectionChannel];
     AwesomeNotifications().initialize(null, channels, debug: true);
 
     AwesomeNotifications().setListeners(
@@ -58,6 +58,7 @@ void onStart(ServiceInstance service) async {
 
       if (event.toString() == "[ConnectivityResult.wifi]") {
         debugPrint("connectivity is wifi");
+
         backWebsocket.listen();
 
         await backJanus.initJanusClient();
@@ -66,11 +67,26 @@ void onStart(ServiceInstance service) async {
           backJanus.autoRegister();
         });
       } else {
-        debugPrint("Not connected to WiFi : ${backJanus.session.sessionId}");
-
+        AwesomeNotifications().cancel(3);
+        await AwesomeNotifications().createNotification(
+          content: NotificationContent(
+              id: 3,
+              channelKey: 'connection_channel',
+              title: "SIP Notification",
+              body: 'Connecting to server',
+              duration: const Duration(seconds: 10)
+          ),
+        );
+        debugPrint("Not connected to WiFi");
       }
     });
 
+
+
+
+    service.on('websocketDisconnect').listen((event) {
+      backWebsocket.disconnect();
+    });
 
 
 
@@ -79,8 +95,11 @@ void onStart(ServiceInstance service) async {
     });
 
     service.on('disposeJanusClient').listen((event) {
-      int? sessionNumber = backJanus.session.sessionId;
-      print("session number : $sessionNumber");
+      print("disconnecting");
+    });
+
+    service.on('disposeMediaStream').listen((event) {
+      print("disconnecting");
     });
 
     service.on('reconnect').listen((event) {
@@ -98,12 +117,9 @@ void onStart(ServiceInstance service) async {
       vibrator.start();
     });
 
-    service.on('playRingtone').listen((event) async{
-      debugPrint("Playing Ringtone");
-    });
-
-    service.on('stopRingtone').listen((event) {
-
+    service.on('stopAllTracks').listen((event) {
+      debugPrint("Stopping all tracks");
+      backJanus.stopTracks();
     });
 
 
@@ -147,6 +163,7 @@ void onStart(ServiceInstance service) async {
 
       final flag = event?['flag'];
       final isMuted = event?['isMuted'];
+
       await backJanus.muteUnmute(flag, isMuted);
     });
 
