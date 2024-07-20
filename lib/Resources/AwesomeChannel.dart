@@ -35,6 +35,25 @@ class AwesomeChannel {
     enableLights: true,
     channelShowBadge: true,
   );
+
+
+
+
+  NotificationChannel connectionChannel = NotificationChannel(
+    channelKey: 'connection_channel',
+    channelName: 'Connecting to Server',
+    channelDescription: 'Connecting to server',
+    importance: NotificationImportance.Max,
+    playSound: true,
+    enableVibration: true,
+    defaultColor: Pallete.gradient3,
+    ledColor: Pallete.gradient4,
+    criticalAlerts: true,
+    enableLights: true,
+    channelShowBadge: true,
+  );
+
+
 }
 
 final awesomeChannel = AwesomeChannel();

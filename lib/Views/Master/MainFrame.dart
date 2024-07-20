@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -85,7 +86,18 @@ class MainFrameState extends State<MainFrame>{
           setState(() {
             debugPrint("Setting state if registered");
             janusConnection = "registered";
+
           });
+          AwesomeNotifications().cancel(3);
+          await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 3,
+                channelKey: 'connection_channel',
+                title: "SIP Notification",
+                body: 'Connected',
+                duration: const Duration(seconds: 10)
+            ),
+          );
           debugPrint("equal to SipRegisteredEvent");
           // toast.success(context, "SIP registered successfully");
           setState(() {
@@ -98,6 +110,7 @@ class MainFrameState extends State<MainFrame>{
         }else if(msg == "SipAcceptedEvent"){
           debugPrint("getting the call status");
           final outgoing = await riseDatabase.getStatus("outgoing");
+          debugPrint("it is outgoing $outgoing");
           if(outgoing == 1){
             navigationProvider.showOnCallWidget();
           }
@@ -188,14 +201,6 @@ class MainFrameState extends State<MainFrame>{
 
 
 
-  Future<bool> isMailboxUser() async {
-    String username = await storageController.getData("mailboxNumber");
-    if(username.isNotEmpty){
-      final dynamic result = await api.getUserData(username, "Diavox123!");
-      debugPrint(result);
-    }
-    return false;
-  }
 
 
 
@@ -219,90 +224,122 @@ class MainFrameState extends State<MainFrame>{
       appBar: AppBar(
         title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
         actions: [
+
           if(showSipStatus == true)...[
-            InkWell(
-              onTap: () {
-                // Perform your action on tap
-                debugPrint("Janus status $janusConnection");
-                if (janusConnection == "registered") {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        backgroundColor: Pallete.white.withOpacity(1),
-                        title: const Text("Un-Register ?", style: TextStyle(
-                            color: Pallete.gradient4,
-                            fontWeight: FontWeight.bold
-                        ),),
-                        content: const Text('Are you sure you want to unregister to webrtc?',
-                          style: TextStyle(
-                              color: Pallete.backgroundColor,
-                              fontWeight: FontWeight.bold
-                          ),),
-                        actions: <Widget>[
-                          Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                TextButton(
-                                  onPressed: () async{
-                                    await storageController.storeData("janusConnection", "unregistered");
-                                    setState(() {
-                                      janusConnection = "unregistered";
-                                    });
-                                    FlutterBackgroundService().invoke('unRegister');
-                                    Navigator.of(context).pop();
-                                  },
-                                  style: ButtonStyle(
-                                    backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                  ),
-                                  child:  const Text('Proceed',
-                                    style: TextStyle(
-                                      color: Pallete.white,
-                                      fontWeight: FontWeight.w900,
-                                    ),),
-                                ),
-                                TextButton(
-                                  child: const Text('Close', style: TextStyle(
-                                      color: Pallete.backgroundColor,
-                                      fontWeight: FontWeight.bold
-                                  ),),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
+            Row(
+              children: [
+                FutureBuilder<dynamic>(
+                  future: storageController.getData("mailboxNumber"),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Row(
+                        children: [
+                          Text(
+                            snapshot.data!,
+                            style:  const TextStyle(
+                                color: Pallete.gradient1,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18
                             ),
                           ),
+                          const Icon(Icons.extension, color: Pallete.gradient1),
                         ],
                       );
-                    },
-                  );
-                }else if(janusConnection == "unregistered"){
-                  navigationProvider.setIndex(2);
-                }
-              },
-              child: Container(
-                margin: const EdgeInsets.all(8.0),
-                padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
-                decoration: BoxDecoration(
-                  color: Colors.white, // Background color if needed
-                  border: Border.all(
-                    color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
-                    width: 2.0, // Border width
-                  ),
-                  borderRadius: BorderRadius.circular(8.0), // Border radius
+
+                    } else if (snapshot.hasError) {
+                      return const Text('No Extension Detected');
+                    }
+                    return const CircularProgressIndicator();
+                  },
                 ),
-                child: Text(
-                  janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
-                  style: TextStyle(
-                    color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                const SizedBox(width: 20),
+                InkWell(
+                  onTap: () {
+                    // Perform your action on tap
+                    debugPrint("Janus status $janusConnection");
+                    if (janusConnection == "registered") {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            backgroundColor: Pallete.white.withOpacity(1),
+                            title: const Text("Un-Register ?", style: TextStyle(
+                                color: Pallete.gradient4,
+                                fontWeight: FontWeight.bold
+                            ),),
+                            content: const Text('Are you sure you want to unregister to webrtc?',
+                              style: TextStyle(
+                                  color: Pallete.backgroundColor,
+                                  fontWeight: FontWeight.bold
+                              ),),
+                            actions: <Widget>[
+                              Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () async{
+                                        await storageController.storeData("janusConnection", "unregistered");
+                                        setState(() {
+                                          janusConnection = "unregistered";
+                                        });
+                                        FlutterBackgroundService().invoke('unRegister');
+                                        Navigator.of(context).pop();
+                                      },
+                                      style: ButtonStyle(
+                                        backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                      ),
+                                      child:  const Text('Proceed',
+                                        style: TextStyle(
+                                          color: Pallete.white,
+                                          fontWeight: FontWeight.w900,
+                                        ),),
+                                    ),
+                                    TextButton(
+                                      child: const Text('Close', style: TextStyle(
+                                          color: Pallete.backgroundColor,
+                                          fontWeight: FontWeight.bold
+                                      ),),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }else if(janusConnection == "unregistered"){
+                      navigationProvider.setIndex(2);
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Background color if needed
+                      border: Border.all(
+                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
+                        width: 2.0, // Border width
+                      ),
+                      borderRadius: BorderRadius.circular(8.0), // Border radius
+                    ),
+                    child: Text(
+                      janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
+                      style: TextStyle(
+                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              ],
+            )
+
+
           ],
         ],
       ),

@@ -2,7 +2,11 @@ import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
+import 'package:rise/Resources/MyAudio.dart';
 
 class AwesomeNotificationHandler {
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
@@ -11,6 +15,27 @@ class AwesomeNotificationHandler {
     if(callStatus == "incoming"){
       IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
     }
+
+    // if(receivedAction.buttonKeyPressed == 'ACCEPT'){
+    //   debugPrint("Accept");
+    //   myAudio.stop();
+    //   backJanus.accept();
+    //   await riseDatabase.setAccepted(1);
+    //   // FlutterBackgroundService().invoke('accept');
+    // }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
+    //   debugPrint("Decline");
+    //   final outgoing = await riseDatabase.getStatus("outgoing");
+    //   final incoming = await riseDatabase.getStatus("incoming");
+    //   if(outgoing == 1){
+    //     backJanus.hangup();
+    //   }
+    //
+    //   if(incoming == 1){
+    //     backJanus.decline();
+    //   }
+    //
+    //   myAudio.stop();
+    // }
   }
 
   // Optionally handle notification created event

@@ -56,6 +56,12 @@ class RiseDatabase{
       {'name': 'incoming', 'stats': 0},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    await db.insert(
+      'call_statuses',
+      {'name': 'accepted', 'stats': 0},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<void> insertCallStatus(String name, bool stats) async {
@@ -77,6 +83,18 @@ class RiseDatabase{
       whereArgs: [name],
     );
   }
+
+  Future<void> setAccepted(int status) async{
+    final db = await database;
+    debugPrint("setting call status to accepted");
+    await db.update(
+      'call_statuses',
+      {'stats': status},
+      where: 'name = ?',
+      whereArgs: ['accepted'],
+    );
+  }
+
 
 
   Future<int> getStatus(String name) async {

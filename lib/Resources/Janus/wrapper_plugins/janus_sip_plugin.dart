@@ -25,7 +25,8 @@ class JanusSipPlugin extends JanusPlugin {
 
       // Do not use await here in the constructor
       // Instead, call an asynchronous initialization method
-      initializeWebrtc(webrtcConfig);
+      // initializeWebrtc(webrtcConfig);
+      initializeWebRTCStack();
     }
   }
 
@@ -37,8 +38,6 @@ class JanusSipPlugin extends JanusPlugin {
 
     webrtcStuff?['pc'] = pc;
     webrtcStuff?['myStream'] = null;
-    //webrtcStuff?['pc'] = webRTCHandle?.peerConnection;
-    //webrtcStuff?['pc'] = await createPeerConnection(webrtcConfig);
     webrtcStuff?['dtmfSender'] = null;
     print("----------------------- WEBRTCSTUFF === $webrtcStuff");
   }
@@ -147,6 +146,7 @@ class JanusSipPlugin extends JanusPlugin {
         await this.send(data: payload, jsep: sessionDescription));
     JanusError.throwErrorFromEvent(response);
   }
+
 
   /// unregister from the SIP server.
   Future<void> unregister() async {

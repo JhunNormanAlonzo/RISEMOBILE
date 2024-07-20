@@ -6,12 +6,14 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
 import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
+import 'package:rise/Resources/Janus/janus_client.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyVibration.dart';
 
@@ -33,9 +35,12 @@ Future<void> initializeService() async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   HttpOverrides.global = MyHttpOverrides();
-
+  var backWebsocket = BackgroundWebsocket();
   if (service is AndroidServiceInstance) {
-    List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
+
+    var backJanus = BackJanusController();
+
+    List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel, awesomeChannel.connectionChannel];
     AwesomeNotifications().initialize(null, channels, debug: true);
 
     AwesomeNotifications().setListeners(
@@ -46,13 +51,59 @@ void onStart(ServiceInstance service) async {
     );
 
 
+    final Connectivity connectivity = Connectivity();
 
-    backWebsocket.listen();
-    backJanus.initJanusClient();
+    connectivity.onConnectivityChanged.listen((event) async {
+      debugPrint("connectivity event : ${event.toString()}");
+
+      if (event.toString() == "[ConnectivityResult.wifi]") {
+        debugPrint("connectivity is wifi");
+
+        backWebsocket.listen();
+
+        await backJanus.initJanusClient();
+
+        Future.delayed(const Duration(seconds: 5), () async{
+          backJanus.autoRegister();
+        });
+      } else {
+        AwesomeNotifications().cancel(3);
+        await AwesomeNotifications().createNotification(
+          content: NotificationContent(
+              id: 3,
+              channelKey: 'connection_channel',
+              title: "SIP Notification",
+              body: 'Connecting to server',
+              duration: const Duration(seconds: 10)
+          ),
+        );
+        debugPrint("Not connected to WiFi");
+      }
+    });
+
+
+
+
+    service.on('websocketDisconnect').listen((event) {
+      backWebsocket.disconnect();
+    });
+
 
 
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
+    });
+
+    service.on('disposeJanusClient').listen((event) {
+      print("disconnecting");
+    });
+
+    service.on('disposeMediaStream').listen((event) {
+      print("disconnecting");
+    });
+
+    service.on('reconnect').listen((event) {
+      print("reconnecting");
     });
 
     service.on('setAsBackground').listen((event) {
@@ -66,12 +117,9 @@ void onStart(ServiceInstance service) async {
       vibrator.start();
     });
 
-    service.on('playRingtone').listen((event) async{
-      debugPrint("Playing Ringtone");
-    });
-
-    service.on('stopRingtone').listen((event) {
-
+    service.on('stopAllTracks').listen((event) {
+      debugPrint("Stopping all tracks");
+      backJanus.stopTracks();
     });
 
 
@@ -115,6 +163,7 @@ void onStart(ServiceInstance service) async {
 
       final flag = event?['flag'];
       final isMuted = event?['isMuted'];
+
       await backJanus.muteUnmute(flag, isMuted);
     });
 

@@ -3,6 +3,8 @@ library janus_client;
 
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
+import 'package:rise/Controllers/BackJanusController.dart';
+import 'package:rise/Resources/Function.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';

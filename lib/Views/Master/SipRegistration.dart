@@ -48,7 +48,7 @@ class SettingState extends State<Settings> {
             const SizedBox(height: 30),
             const Center(
               child:  Text(
-                "WebRTC Registration",
+                "SIP Registration",
                 style: TextStyle(
                     color: Pallete.white,
                     fontSize: 20,
