@@ -90,6 +90,14 @@ void onStart(ServiceInstance service) async {
 
 
 
+
+
+    service.on('testerMethod').listen((event) {
+      backJanus.testerMethod();
+    });
+
+
+
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
     });

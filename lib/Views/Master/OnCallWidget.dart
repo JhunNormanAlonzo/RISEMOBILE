@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -12,6 +13,7 @@ import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
@@ -47,9 +49,9 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   @override
   void initState() {
     super.initState();
-    // initAudioStreamType();
+    initAudioStreamType();
     // _loudVolume();
-
+    _deviceVolume();
 
   }
 
@@ -88,8 +90,29 @@ class _OnCallWidgetState extends State<OnCallWidget> {
                           color: Colors.white,
                           size: 40,
                         ),
+                        FutureBuilder<dynamic>(
+                          future: riseDatabase.selectLastCallHistory(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final data = snapshot.data['extension'];
+
+                              print(data);
+                              return Text(
+                                data!,
+                                style: const TextStyle(
+                                    color: Pallete.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20
+                                ),
+                              );
+                            } else if (snapshot.hasError) {
+                              return const Text('No Extension Detected');
+                            }
+                            return const CircularProgressIndicator();
+                          },
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 Row(
@@ -208,10 +231,27 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   }
 
 
+  void _deviceVolume() async {
+    try {
+      final deviceVolume = await Volume.getVol;
+      setState(() {
+        debugPrint("test1");
+        currentVol = deviceVolume.toDouble();
+        debugPrint("test2");
+        setVol(androidVol: currentVol.toInt(), iOSVol: currentVol);
+        isLoudSpeaker = false;
+      });
+    } on PlatformException catch (e) {
+      debugPrint('Error: ${e.message}');
+    }
+  }
+
   void _normalVolume() async {
     try {
+      dynamic normalVolume = 4.0;
+      debugPrint("normal volume : $normalVolume");
       setState(() {
-        currentVol = 1.0;
+        currentVol = normalVolume;
         setVol(androidVol: currentVol.toInt(), iOSVol: currentVol);
         isLoudSpeaker = false;
       });
@@ -223,6 +263,7 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   void _loudVolume() async {
     try {
       maxVol = await Volume.getMaxVol;
+      debugPrint("max volume is : $maxVol");
       setState(() {
         setVol(androidVol: maxVol.toInt(), iOSVol: maxVol.toDouble());
         isLoudSpeaker = true;

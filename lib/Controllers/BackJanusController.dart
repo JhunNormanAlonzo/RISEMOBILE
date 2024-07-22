@@ -4,6 +4,7 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
@@ -44,6 +45,14 @@ class BackJanusController{
     _messageStreamController.close();
   }
 
+  void testerMethod() async{
+    final devices =  await sip?.getAudioInputDevices();
+    devices?.forEach((element) {
+      print(element.kind);
+    });
+
+  }
+
 
   localStreamInitializer() async{
      mediaStream =  await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
@@ -70,14 +79,20 @@ class BackJanusController{
       sip?.typedMessages?.listen((even) async {
         Object data = even.event.plugindata?.data;
         print("data received start");
-        print(data);
         print("data received start");
+
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
+          String callerString = data.result?.username as String;
+          RegExp regex = RegExp(r":(.+)@");
+          Match match = regex.firstMatch(callerString) as Match;
+          String number = match.group(1)!;
+
+          await storageController.storeData("caller", number);
+          await riseDatabase.insertHistory(number, "incoming");
           storageController.storeData("callStatus", "incoming");
           await riseDatabase.setActive("incoming");
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
-
 
 
           await sip?.initializeWebRTCStack();
@@ -87,15 +102,17 @@ class BackJanusController{
 
           rtc = even.jsep;
           debugPrint("sending set ready");
+
           IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
 
           if(lifecycle == NotificationLifeCycle.Background){
+            final caller = await storageController.getData("caller");
             AwesomeNotifications().createNotification(
                 content: NotificationContent(
                     id: 2,
                     channelKey: 'call_channel',
                     title: "Call Notification",
-                    body: 'Incoming call!',
+                    body: 'Incoming call $caller!',
                     duration: const Duration(seconds: 10)
                 ),
                 // actionButtons: [
@@ -116,6 +133,7 @@ class BackJanusController{
           // navigationProvider.showOnCallWidget();
         }
         if (data is SipHangupEvent) {
+
           print("local stream start");
           print(mediaStream);
           print("local stream end");
@@ -253,6 +271,7 @@ class BackJanusController{
   }
 
   makeCall(mailbox, androidHost) async {
+
     await riseDatabase.setActive("outgoing");
     var newValue = "sip:$mailbox@$androidHost";
     debugPrint("Passing to make call : $newValue");
@@ -261,6 +280,7 @@ class BackJanusController{
     await localStreamInitializer();
     var offer = await sip?.createOffer(videoRecv: false, audioRecv: true);
     await sip?.call(newValue, offer: offer, autoAcceptReInvites: false);
+    await riseDatabase.insertHistory(mailbox, "outgoing");
   }
 
   decline() async{
