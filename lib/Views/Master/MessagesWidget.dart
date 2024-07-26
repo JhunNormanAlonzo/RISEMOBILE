@@ -1,14 +1,17 @@
 
 
+import 'dart:convert';
 import 'dart:ui';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:rise/Controllers/StorageController.dart';
-import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
+import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/Function.dart';
-import 'package:rise/Resources/MyToast.dart';
+import 'package:rise/Resources/MyVibration.dart';
 import 'package:rise/Resources/Pallete.dart';
+import 'package:vibration/vibration.dart';
 
 
 
@@ -20,25 +23,14 @@ class MessagesWidget extends StatefulWidget {
 }
 
 class _MessagesWidgetState extends State<MessagesWidget> {
+  static const platform = MethodChannel('com.example.app/ringtone');
+  static const MethodChannel _channel = MethodChannel('com.example.app/audiotrack');
+
+  bool isToggled = false;
+
   @override
   void dispose(){
     super.dispose();
-  }
-  Future<void> autoRegister() async{
-    try{
-      final mailbox = await storageController.getData("mailboxNumber");
-      final password = await storageController.getData("password");
-      final androidHost = await storageController.getData('androidHost');
-      FlutterBackgroundService().invoke('registerUser', {
-        'androidHost': androidHost,
-        'username': mailbox,
-        'password': password
-      });
-    }catch(e){
-      toast.error(context, "Error on auto register missing data");
-      debugPrint("Cannot trigger auto register");
-    }
-
   }
 
   @override
@@ -58,45 +50,69 @@ class _MessagesWidgetState extends State<MessagesWidget> {
           const SizedBox(height: 30),
           ElevatedButton(
             onPressed: () async {
-              // storageController.removeData("mailboxNumber");
-              // storageController.storeData("callStatus", "outgoing");
-              // final etst = await storageController.getData("callStatus");
-              // debugPrint("the call status is is $etst");
-              // final directory = await getApplicationDocumentsDirectory();
-              // debugPrint("the path is $directory");
-
-              // final gateway = await storageController.getData("gateway");
-              // final ws = WebSocketJanusTransport(url: gateway);
-              // debugPrint("getting janus status start");
-              // await ws.getInfo();
-              // debugPrint("getting janus status end" );
-
-              FlutterBackgroundService().invoke('reconnect');
-
+              try {
+                await riseDatabase.insertHistory("819", "incoming");
+              } on PlatformException catch (e) {
+                print("Failed ${e.message}.");
+              }
             },
-            // child: const Text("Clear Extension"),
-            child: const Text("Janus reconnect "),
+            child: const Text("Insert Incoming"),
           ),
           ElevatedButton(
             onPressed: () async {
-             invoke('disposeJanusClient');
+              try {
+                await riseDatabase.insertHistory("820", "outgoing");
+              } on PlatformException catch (e) {
+                print("Failed ${e.message}.");
+              }
             },
-            child: const Text("Janus Disconnect "),
+            child: const Text("Insert Outgoing"),
           ),
           ElevatedButton(
             onPressed: () async {
-              invoke('stopAllTracks');
+              try {
+                final dynamic histories = await riseDatabase.selectLastCallHistory();
+
+                print(histories['extension']);
+              } on PlatformException catch (e) {
+                print("Failed ${e.message}.");
+              }
             },
-            child: const Text("stop tracks"),
+            child: const Text("Get All History "),
           ),
           ElevatedButton(
             onPressed: () async {
-              FlutterBackgroundService().invoke('muteUnmute',{
-                'flag' : '0',
-                'isMuted' : true
-              });
+              try {
+                invoke("hangup");
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
             },
-            child: const Text("true"),
+            child: const Text("Stop Audio track"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                FlutterBackgroundService().invoke('enableSpeakerMode',{
+                  'mode' : true
+                });
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
+            },
+            child: const Text("Speaker Phone TRUE"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                FlutterBackgroundService().invoke('enableSpeakerMode',{
+                  'mode' : false
+                });
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
+            },
+            child: const Text("Speaker Phone FALSE"),
           ),
         ],
       ),

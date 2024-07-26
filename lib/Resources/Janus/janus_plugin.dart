@@ -87,27 +87,16 @@ class JanusPlugin {
       _renegotiationNeededController?.sink.add(true);
     };
 
-    // peerConnection.onConnectionState = (RTCPeerConnectionState state) {
-    //   var backJanus = BackJanusController();
-    //   print('Connection state change: $state');
-    //   switch(state){
-    //     case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
-    //       backJanus.hangup();
-    //       break;
-    //     case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
-    //       backJanus.hangup();
-    //       break;
-    //     default:
-    //       print('WebRTC connection state: $state');
-    //       break;
-    //   }
-    // };
     //unified plan webrtc tracks emitter
     _handleUnifiedWebRTCTracksEmitter(peerConnection);
     //send ice candidates to janus server on this specific handle
     _handleIceCandidatesSending(peerConnection);
     webRTCHandle = JanusWebRTCHandle(peerConnection: peerConnection);
   }
+
+
+
+
 
   // used internally for initializing plugin, exposed only to be called via [JanusSession] attach method.
   // `not useful for external operations`

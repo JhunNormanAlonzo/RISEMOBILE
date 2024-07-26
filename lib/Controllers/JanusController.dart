@@ -139,7 +139,7 @@ class JanusController{
 
 
   muteUnmute(level, isMuted) async{
-    await sip?.muteUnmute(level, isMuted);
+    // await sip?.muteUnmute(level, isMuted);
   }
 
   makeCall(mailbox, androidHost) async {

@@ -21,7 +21,7 @@ class MyAudio{
 
   Future<void> danger() async {
     await Volume.initAudioStream(AudioManager.streamMusic);
-    final maxVol = await Volume.getMaxVol;
+    final maxVol = await Volume.getVol;
 
     await Volume.setVol(
         androidVol: maxVol.toInt(),
@@ -44,10 +44,10 @@ class MyAudio{
 
  Future<void> incoming() async {
    await Volume.initAudioStream(AudioManager.streamMusic);
-   final maxVol = await Volume.getMaxVol;
+   final currentVolume = await Volume.getVol;
    await Volume.setVol(
-       androidVol: maxVol.toInt(),
-       iOSVol: maxVol.toDouble(),
+       androidVol: currentVolume.toInt(),
+       iOSVol: currentVolume.toDouble(),
        showVolumeUI: false
    );
     await player.setAsset('assets/sounds/ringing.mp3');

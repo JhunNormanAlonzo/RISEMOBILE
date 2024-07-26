@@ -160,6 +160,7 @@ class JanusSipPlugin extends JanusPlugin {
   Future<void> hangup({
     Map<String, dynamic>? headers,
   }) async {
+
     var payload = {"request": "hangup", "headers": headers}
       ..removeWhere((key, value) => value == null);
     JanusEvent response = JanusEvent.fromJson(await this.send(data: payload));
@@ -362,19 +363,20 @@ class JanusSipPlugin extends JanusPlugin {
   }
 
 
-  Future<void> muteUnmute(String mid, bool mute) async {
-    JanusPlugin? pluginHandle = _session?._pluginHandles[handleId];
-    pluginHandle!.webrtcStuff!;
-    var pc = pluginHandle.webRTCHandle?.peerConnection;
-
-    List<RTCRtpTransceiver>? transceivers = await pc?.getTransceivers();
-    for (var transceiver in transceivers ?? []) {
-      if (transceiver.mid == mid) {
-        transceiver.sender.track?.enabled = mute;
-      }
-    }
-
-  }
+  // Future<void> muteUnmute(String mid, bool mute) async {
+  //   JanusPlugin? pluginHandle = _session?._pluginHandles[handleId];
+  //   pluginHandle!.webrtcStuff!;
+  //   var pc = pluginHandle.webRTCHandle?.peerConnection;
+  //
+  //   List<RTCRtpTransceiver>? transceivers = await pc?.getTransceivers();
+  //   for (var transceiver in transceivers ?? []) {
+  //     if (transceiver.mid == mid) {
+  //       transceiver.sender.track?.enabled = mute;
+  //     }
+  //   }
+  //
+  //
+  // }
 
 
 

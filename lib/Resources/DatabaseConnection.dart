@@ -44,6 +44,16 @@ class RiseDatabase{
         stats BOOLEAN
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS call_histories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        extension TEXT,
+        direction TEXT,
+        date_time TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
     debugPrint("inserting to table");
     await db.insert(
       'call_statuses',
@@ -67,6 +77,21 @@ class RiseDatabase{
   Future<void> insertCallStatus(String name, bool stats) async {
 
   }
+
+  Future<void> insertHistory(String extension, String direction) async {
+    final db = await database;
+    await db.insert(
+      'call_histories',
+      {
+        'extension': extension,
+        'direction': direction
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+
+
 
   Future<void> setActive(String name) async{
     final db = await database;
@@ -95,6 +120,24 @@ class RiseDatabase{
     );
   }
 
+  Future<List<Map<String, dynamic>>> selectAllCallHistories() async {
+    final db = await database;
+    final result = await db.query(
+        'call_histories',
+        orderBy: 'date_time DESC',
+    );
+    return result.toList();
+  }
+
+  Future<Map<String, dynamic>?>  selectLastCallHistory() async {
+    final db = await database;
+    final result = await db.query(
+      'call_histories',
+      orderBy: 'date_time DESC',
+      limit: 1
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
 
 
   Future<int> getStatus(String name) async {

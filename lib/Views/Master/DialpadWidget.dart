@@ -10,6 +10,7 @@ import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:rise/Resources/Pallete.dart';
+import 'package:vibration/vibration.dart';
 
 
 
@@ -43,6 +44,7 @@ class _DialpadWidgetState extends State<DialpadWidget> {
 
   final TextEditingController _controller = TextEditingController();
   void _onButtonPressed(String number) {
+    Vibration.vibrate(duration: 100);
     setState(() {
       inputNumber += number;
       _controller.text = inputNumber;
@@ -53,6 +55,7 @@ class _DialpadWidgetState extends State<DialpadWidget> {
     // janus.sendDtmf(inputNumber);
   }
   void _onBackspacePressed() {
+    Vibration.vibrate(duration: 100);
     setState(() {
       if (inputNumber.isNotEmpty) {
         inputNumber = inputNumber.substring(0, inputNumber.length - 1);
@@ -61,13 +64,14 @@ class _DialpadWidgetState extends State<DialpadWidget> {
     });
   }
   void _onDialPressed() async{
-
+    Vibration.vibrate(duration: 100);
     final androidHost = await storageController.getData("androidHost");
     if (androidHost == null && androidHost.isEmpty) {
       await api.getAndroidHost();
     }
     debugPrint("calling : $inputNumber");
     // janus.makeCall(inputNumber, androidHost);
+    await storageController.storeData("caller", inputNumber);
     FlutterBackgroundService().invoke('makeCall',{
       'inputNumber' : inputNumber,
       'androidHost' : androidHost,
@@ -80,6 +84,7 @@ class _DialpadWidgetState extends State<DialpadWidget> {
 
   }
   void _onClearPressed() async{
+    Vibration.vibrate(duration: 100);
     setState(() {
       inputNumber = "";
       _controller.clear();

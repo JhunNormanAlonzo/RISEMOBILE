@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Components/Button.dart';
@@ -25,6 +26,7 @@ import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:rise/Resources/Provider/NavigationProvider.dart';
+import 'package:rise/Views/Master/CallHistoryWidget.dart';
 import 'package:rise/Views/Master/DialpadWidget.dart';
 import 'package:rise/Views/Master/FireWidget.dart';
 import 'package:rise/Views/Master/MessagesWidget.dart';
@@ -106,6 +108,7 @@ class MainFrameState extends State<MainFrame>{
           navigationProvider.setIndex(0);
         }else if(msg == "SipHangupEvent"){
           myAudio.stop();
+          await Volume.initAudioStream(AudioManager.streamSystem);
           navigationProvider.hideOnCallWidget();
         }else if(msg == "SipAcceptedEvent"){
           debugPrint("getting the call status");
@@ -208,6 +211,8 @@ class MainFrameState extends State<MainFrame>{
     final navigationProvider = Provider.of<NavigationProvider>(context);
     final List<Widget> widgets = [
       DialpadWidget(),
+      DialpadWidget(),
+      const CallHistoryWidget(),
       const MessagesWidget(),
       const Settings(),
       if (navigationProvider.showOnCall)...[
@@ -605,6 +610,14 @@ class MainFrameState extends State<MainFrame>{
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.dialpad),
                     label: 'Dialpad',
+                  ),
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.surround_sound),
+                    label: 'Sounds',
+                  ),
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.history),
+                    label: 'Call History',
                   ),
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.message),

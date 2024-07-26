@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -8,10 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_foreground_service/flutter_foreground_service.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
@@ -26,7 +29,6 @@ class OnCallWidget extends StatefulWidget {
 
 class _OnCallWidgetState extends State<OnCallWidget> {
   bool isMuted = false,
-      isLoudSpeaker= true,
       isIncomingCall = false,
       isOngoingCall = false;
 
@@ -43,14 +45,12 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     '*', '0', '#'
   ];
 
+  bool speakerMode = false;
 
   @override
   void initState() {
     super.initState();
-    // initAudioStreamType();
-    // _loudVolume();
-
-
+    settingToNormalSpeaker();
   }
 
   @override
@@ -88,8 +88,29 @@ class _OnCallWidgetState extends State<OnCallWidget> {
                           color: Colors.white,
                           size: 40,
                         ),
+                        FutureBuilder<dynamic>(
+                          future: riseDatabase.selectLastCallHistory(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final data = snapshot.data['extension'];
+
+                              print(data);
+                              return Text(
+                                data!,
+                                style: const TextStyle(
+                                    color: Pallete.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20
+                                ),
+                              );
+                            } else if (snapshot.hasError) {
+                              return const Text('No Extension Detected');
+                            }
+                            return const CircularProgressIndicator();
+                          },
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 Row(
@@ -98,19 +119,17 @@ class _OnCallWidgetState extends State<OnCallWidget> {
                     Column(
                       children: [
                         OnCallButton(
-                          icon: !isLoudSpeaker ? Icons.volume_down : Icons.volume_up, color: Colors.white, size: 50,
+                          icon: !speakerMode ? Icons.volume_down : Icons.volume_up, color: Colors.white, size: 50,
                           onPressed: (){
-                            if(!isLoudSpeaker){
-                              setState(() {
-                                isLoudSpeaker = true;
-                                _loudVolume();
-                              });
-                            }else{
-                              setState(() {
-                                isLoudSpeaker = false;
-                                _normalVolume();
-                              });
-                            }
+                            debugPrint("Setting the speaker mode to : ${!speakerMode}");
+                            FlutterBackgroundService().invoke('enableSpeakerMode',{
+                              'mode' : !speakerMode
+                            });
+
+                            setState(() {
+                              speakerMode = !speakerMode;
+                            });
+
                           },
                         )
                       ],
@@ -208,33 +227,13 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   }
 
 
-  void _normalVolume() async {
-    try {
-      setState(() {
-        currentVol = 1.0;
-        setVol(androidVol: currentVol.toInt(), iOSVol: currentVol);
-        isLoudSpeaker = false;
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error: ${e.message}');
-    }
+  void settingToNormalSpeaker() async{
+    FlutterBackgroundService().invoke('enableSpeakerMode',{
+      'mode' : false
+    });
   }
 
-  void _loudVolume() async {
-    try {
-      maxVol = await Volume.getMaxVol;
-      setState(() {
-        setVol(androidVol: maxVol.toInt(), iOSVol: maxVol.toDouble());
-        isLoudSpeaker = true;
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error: ${e.message}');
-    }
-  }
 
-  Future<void> initAudioStreamType() async {
-    await Volume.initAudioStream(AudioManager.streamVoiceCall);
-  }
 
 
   onNumberTapped(number) {
