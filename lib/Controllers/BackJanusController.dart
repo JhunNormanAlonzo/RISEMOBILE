@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:audio_session/audio_session.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -32,7 +33,7 @@ class BackJanusController{
   RTCTrackEvent? rtcTrackEvent;
   RTCPeerConnection? pc;
   RemoteTrack? remoteTrack;
-
+  JanusPlugin? jp;
 
   final StreamController<String> _messageStreamController = StreamController<String>.broadcast();
   Stream<String> get messageStream => _messageStreamController.stream;
@@ -60,6 +61,10 @@ class BackJanusController{
 
 
 
+  closePeerConnection() async{
+    sip?.webRTCHandle?.peerConnection?.close();
+    sip?.webRTCHandle?.peerConnection = null;
+  }
 
   Future<void> initJanusClient() async {
     await disconnectJanusClient();
@@ -78,8 +83,6 @@ class BackJanusController{
       sip = await session!.attach<JanusSipPlugin>();
       sip?.typedMessages?.listen((even) async {
         Object data = even.event.plugindata?.data;
-        print("data received start");
-        print("data received start");
 
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
@@ -95,7 +98,7 @@ class BackJanusController{
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
 
 
-          await sip?.initializeWebRTCStack();
+
           IsolateNameServer.lookupPortByName('backIsolate')?.send('SipIncomingCallEvent');
 
           debugPrint("Executing delayed WebRTC initialization and jsep handling");
@@ -133,7 +136,8 @@ class BackJanusController{
           // navigationProvider.showOnCallWidget();
         }
         if (data is SipHangupEvent) {
-
+          await sip?.webRTCHandle?.peerConnection?.close();
+          sip?.webRTCHandle?.peerConnection = null;
           print("local stream start");
           print(mediaStream);
           print("local stream end");
@@ -165,12 +169,17 @@ class BackJanusController{
         }
         if (data is SipProceedingEvent) {
           debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED----------------------------------------------");
+          debugPrint("--------------------------------------Proceeding | Ringing----------------------------------------------");
+          debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED DONE----------------------------------------------");
         }
         if (data is SipProgressEvent) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipProgressEvent EVENT RECEIVED----------------------------------------------");
         }
         if (data is SipRingingEvent) {
           debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED----------------------------------------------");
+          debugPrint("--------------------------------------Ringing----------------------------------------------");
+          debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED DONE----------------------------------------------");
         }
         if (data is SipAcceptedEventResult) {
           debugPrint("--------------------------------------SipAcceptedEventResult EVENT RECEIVED----------------------------------------------");
@@ -205,6 +214,8 @@ class BackJanusController{
 
   hangup() async{
     debugPrint("**********************************Hangup Call*************************************");
+    await sip?.webRTCHandle?.peerConnection?.close();
+    sip?.webRTCHandle?.peerConnection = null;
     await sip?.hangup();
   }
 
@@ -266,9 +277,38 @@ class BackJanusController{
   }
 
 
-  muteUnmute(level, isMuted) async{
-    await sip?.muteUnmute(level, isMuted);
+  muteUnmute(level, mute) async{
+    // await sip?.muteUnmute(level, isMuted);
+    var senders = await sip?.webRTCHandle?.peerConnection?.senders;
+    senders?.forEach((element) {
+      if (element.track?.kind == 'audio') {
+        element.track?.enabled = mute;
+      }
+    });
   }
+
+  Future<void> speakerPhoneState(bool speakerOn) async {
+    var receivers = await sip?.webRTCHandle?.peerConnection?.receivers;
+    receivers?.forEach((element) {
+      if (element.track?.kind == 'audio') {
+        element.track?.enabled = speakerOn;
+      }
+    });
+  }
+
+
+  Future<void> enableSpeakerMode(bool mode) async {
+    var receivers = await sip?.webRTCHandle?.peerConnection?.receivers;
+    receivers?.forEach((element) {
+      print("Element : ${element.track?.kind}");
+      if (element.track?.kind == 'audio') {
+        element.track?.enableSpeakerphone(mode);
+      }
+    });
+  }
+
+
+
 
   makeCall(mailbox, androidHost) async {
 

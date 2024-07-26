@@ -49,9 +49,20 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+              child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Pallete.gradient3),)
+          );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No call history found.'));
+          return  Center(
+              child: Text(
+                  'No call history found.',
+                  style: TextStyle(
+                    color: Pallete.white.withOpacity(0.7),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20
+                  )
+              )
+          );
         } else {
           return CallHistoryList(callHistories: snapshot.data!);
         }
@@ -65,7 +76,7 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
 class CallHistoryList extends StatelessWidget {
   final List<CallHistory> callHistories;
 
-  CallHistoryList({required this.callHistories});
+  const CallHistoryList({super.key, required this.callHistories});
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +85,9 @@ class CallHistoryList extends StatelessWidget {
       itemBuilder: (context, index) {
         final call = callHistories[index];
         return  ListTile(
-          leading: const CircleAvatar(
+          leading: CircleAvatar(
             backgroundColor: Pallete.gradient4,
-            child: Icon(
-              Icons.cabin,
+            child: Icon(call.direction == "outgoing" ? Icons.call_made : Icons.call_received,
               size: 24, // Sets the size of the icon
               color: Pallete.white, // Sets the color of the icon
             ),
@@ -86,7 +96,7 @@ class CallHistoryList extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${call.direction} • ${call.dateTime}'),
+              Text('${call.direction} • ${call.dateTime}', style: TextStyle(color: Pallete.white.withOpacity(0.6)),),
             ],
           ),
           trailing: IconButton(

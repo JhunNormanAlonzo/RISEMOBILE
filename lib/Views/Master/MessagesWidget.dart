@@ -2,8 +2,10 @@
 
 import 'dart:convert';
 import 'dart:ui';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/Function.dart';
@@ -22,6 +24,9 @@ class MessagesWidget extends StatefulWidget {
 
 class _MessagesWidgetState extends State<MessagesWidget> {
   static const platform = MethodChannel('com.example.app/ringtone');
+  static const MethodChannel _channel = MethodChannel('com.example.app/audiotrack');
+
+  bool isToggled = false;
 
   @override
   void dispose(){
@@ -74,6 +79,40 @@ class _MessagesWidgetState extends State<MessagesWidget> {
               }
             },
             child: const Text("Get All History "),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                invoke("hangup");
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
+            },
+            child: const Text("Stop Audio track"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                FlutterBackgroundService().invoke('enableSpeakerMode',{
+                  'mode' : true
+                });
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
+            },
+            child: const Text("Speaker Phone TRUE"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                FlutterBackgroundService().invoke('enableSpeakerMode',{
+                  'mode' : false
+                });
+              } on PlatformException catch (e) {
+                print("Failed to stop audio track: '${e.message}'.");
+              }
+            },
+            child: const Text("Speaker Phone FALSE"),
           ),
         ],
       ),

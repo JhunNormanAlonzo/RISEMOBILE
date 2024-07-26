@@ -125,6 +125,15 @@ void onStart(ServiceInstance service) async {
       vibrator.start();
     });
 
+    service.on('enableSpeakerMode').listen((event) {
+      final bool mode = event?['mode'];
+      debugPrint("Setting speaker mode to $mode");
+      backJanus.enableSpeakerMode(mode);
+    });
+
+
+
+
     service.on('stopAllTracks').listen((event) {
       debugPrint("Stopping all tracks");
       backJanus.stopTracks();
@@ -163,7 +172,7 @@ void onStart(ServiceInstance service) async {
 
     service.on('accept').listen((event) async {
       debugPrint("****************************Sending ACCEPT using background****************************************");
-      backJanus.accept();
+      await backJanus.accept();
     });
 
     service.on('muteUnmute').listen((event) async {
@@ -199,9 +208,6 @@ void onStart(ServiceInstance service) async {
 
     // List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel];
     // AwesomeNotifications().initialize(null, channels, debug: true);
-
-
-
   }
 
   service.on('stopService').listen((event) {

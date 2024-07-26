@@ -6,13 +6,17 @@ import android.net.Uri;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
+import com.cloudwebrtc.webrtc.record.AudioTrackInterceptor;
+
 
 public class MainActivity extends FlutterActivity {
     private Ringtone ringtone;
-
+    private AudioTrackInterceptor audioTrackInterceptor;
 
     public void configureFlutterEngine(FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
+
+
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), "com.example.app/ringtone")
                 .setMethodCallHandler(
                         (call, result) -> {
@@ -31,6 +35,19 @@ public class MainActivity extends FlutterActivity {
                             }
                         }
                 );
+
+
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), "com.example.app/audiotrack")
+                .setMethodCallHandler(
+                        (call, result) -> {
+                            if (call.method.equals("stopAudioTrack")) {
+                                stopAudioTrack();
+                                result.success(null);
+                            } else {
+                                result.notImplemented();
+                            }
+                        }
+                );
     }
 
     private void playRingtone() {
@@ -41,6 +58,9 @@ public class MainActivity extends FlutterActivity {
         }
     }
 
+    private void stopAudioTrack() {
+        audioTrackInterceptor.stop();
+    }
     private void stopRingtone() {
         if (ringtone != null && ringtone.isPlaying()) {
             ringtone.stop();

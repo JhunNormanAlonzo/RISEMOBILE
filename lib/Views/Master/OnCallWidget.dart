@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_foreground_service/flutter_foreground_service.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +29,6 @@ class OnCallWidget extends StatefulWidget {
 
 class _OnCallWidgetState extends State<OnCallWidget> {
   bool isMuted = false,
-      isLoudSpeaker= true,
       isIncomingCall = false,
       isOngoingCall = false;
 
@@ -45,14 +45,12 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     '*', '0', '#'
   ];
 
+  bool speakerMode = false;
 
   @override
   void initState() {
     super.initState();
-    initAudioStreamType();
-    // _loudVolume();
-    _deviceVolume();
-
+    settingToNormalSpeaker();
   }
 
   @override
@@ -121,19 +119,17 @@ class _OnCallWidgetState extends State<OnCallWidget> {
                     Column(
                       children: [
                         OnCallButton(
-                          icon: !isLoudSpeaker ? Icons.volume_down : Icons.volume_up, color: Colors.white, size: 50,
+                          icon: !speakerMode ? Icons.volume_down : Icons.volume_up, color: Colors.white, size: 50,
                           onPressed: (){
-                            if(!isLoudSpeaker){
-                              setState(() {
-                                isLoudSpeaker = true;
-                                _loudVolume();
-                              });
-                            }else{
-                              setState(() {
-                                isLoudSpeaker = false;
-                                _normalVolume();
-                              });
-                            }
+                            debugPrint("Setting the speaker mode to : ${!speakerMode}");
+                            FlutterBackgroundService().invoke('enableSpeakerMode',{
+                              'mode' : !speakerMode
+                            });
+
+                            setState(() {
+                              speakerMode = !speakerMode;
+                            });
+
                           },
                         )
                       ],
@@ -231,51 +227,13 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   }
 
 
-  void _deviceVolume() async {
-    try {
-      final deviceVolume = await Volume.getVol;
-      setState(() {
-        debugPrint("test1");
-        currentVol = deviceVolume.toDouble();
-        debugPrint("test2");
-        setVol(androidVol: currentVol.toInt(), iOSVol: currentVol);
-        isLoudSpeaker = false;
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error: ${e.message}');
-    }
+  void settingToNormalSpeaker() async{
+    FlutterBackgroundService().invoke('enableSpeakerMode',{
+      'mode' : false
+    });
   }
 
-  void _normalVolume() async {
-    try {
-      dynamic normalVolume = 4.0;
-      debugPrint("normal volume : $normalVolume");
-      setState(() {
-        currentVol = normalVolume;
-        setVol(androidVol: currentVol.toInt(), iOSVol: currentVol);
-        isLoudSpeaker = false;
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error: ${e.message}');
-    }
-  }
 
-  void _loudVolume() async {
-    try {
-      maxVol = await Volume.getMaxVol;
-      debugPrint("max volume is : $maxVol");
-      setState(() {
-        setVol(androidVol: maxVol.toInt(), iOSVol: maxVol.toDouble());
-        isLoudSpeaker = true;
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error: ${e.message}');
-    }
-  }
-
-  Future<void> initAudioStreamType() async {
-    await Volume.initAudioStream(AudioManager.streamVoiceCall);
-  }
 
 
   onNumberTapped(number) {
