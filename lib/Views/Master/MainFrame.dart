@@ -317,7 +317,7 @@ class MainFrameState extends State<MainFrame>{
                         },
                       );
                     }else if(janusConnection == "unregistered"){
-                      navigationProvider.setIndex(2);
+                      navigationProvider.setIndex(4);
                     }
                   },
                   child: Container(
@@ -343,8 +343,6 @@ class MainFrameState extends State<MainFrame>{
                 ),
               ],
             )
-
-
           ],
         ],
       ),
@@ -599,7 +597,7 @@ class MainFrameState extends State<MainFrame>{
               Expanded(
                 child: Center(
                   child: IndexedStack(
-                      index: janusConnection == "unregistered" ? 2 : navigationProvider.selectedIndex,
+                      index: janusConnection == "unregistered" ? 4 : navigationProvider.selectedIndex,
                       children: widgets
                   ),
                 ),
@@ -641,13 +639,13 @@ class MainFrameState extends State<MainFrame>{
                   ],
 
                 ],
-                currentIndex: janusConnection == "unregistered" ? 2 : navigationProvider.selectedIndex,
+                currentIndex: janusConnection == "unregistered" ? 4 : navigationProvider.selectedIndex,
                 selectedItemColor: Colors.blue,
                 unselectedItemColor: Colors.grey,
                 onTap: (index) {
                   debugPrint("index : ${navigationProvider.selectedIndex}");
                   // if (!navigationProvider.showOnCall && index == 3) return;
-                  janusConnection == "unregistered" ? navigationProvider.setIndex(2) : navigationProvider.setIndex(index) ;
+                  janusConnection == "unregistered" ? navigationProvider.setIndex(4) : navigationProvider.setIndex(index) ;
                 },
               ),
             ],
