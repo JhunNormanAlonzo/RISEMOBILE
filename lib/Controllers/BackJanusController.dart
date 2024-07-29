@@ -116,7 +116,8 @@ class BackJanusController{
                     channelKey: 'call_channel',
                     title: "Call Notification",
                     body: 'Incoming call $caller!',
-                    duration: const Duration(seconds: 10)
+                    autoDismissible: false,
+                    duration: const Duration(seconds: 20)
                 ),
                 // actionButtons: [
                 //   NotificationActionButton(key: 'ACCEPT', label: 'Accept', color: Pallete.gradient4),
