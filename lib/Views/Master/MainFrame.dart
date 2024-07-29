@@ -21,6 +21,7 @@ import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/ForegroundService.dart';
+import 'package:rise/Resources/Function.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/Pallete.dart';
@@ -32,6 +33,7 @@ import 'package:rise/Views/Master/FireWidget.dart';
 import 'package:rise/Views/Master/MessagesWidget.dart';
 import 'package:rise/Views/Master/OnCallWidget.dart';
 import 'package:rise/Views/Master/SipRegistration.dart';
+import 'package:rise/Views/QRPage.dart';
 
 
 
@@ -199,7 +201,35 @@ class MainFrameState extends State<MainFrame>{
   @override
   Widget build(BuildContext context) {
     return showSipStatus == false ?
-    checkingSipRegistrationWidget() : frame();
+    checkingSipRegistrationWidget() : PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        return await showDialog(
+            context: context,
+            builder: (BuildContext context){
+              return AlertDialog(
+                title: const Text('Are you sure?'),
+                content:  const Text('Press back again to exit.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Don't exit app
+                    },
+                    child: const Text('No'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(true); // Exit app
+                    },
+                    child: const Text('Yes'),
+                  ),
+                ],
+              );
+            }
+        );
+      },
+      child: frame(context),
+    );
   }
 
 
@@ -207,7 +237,7 @@ class MainFrameState extends State<MainFrame>{
 
 
 
-  frame(){
+  Widget frame(BuildContext context){
     final navigationProvider = Provider.of<NavigationProvider>(context);
     final List<Widget> widgets = [
       DialpadWidget(),
@@ -363,9 +393,9 @@ class MainFrameState extends State<MainFrame>{
                       return Text(
                         snapshot.data!,
                         style: const TextStyle(
-                          color: Pallete.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 50
+                            color: Pallete.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 50
                         ),
                       );
                     } else if (snapshot.hasError) {
@@ -489,58 +519,137 @@ class MainFrameState extends State<MainFrame>{
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                          onPressed: () async{
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  backgroundColor: Pallete.white.withOpacity(1),
-                                  title: const Text("Diavox Rise", style: TextStyle(
-                                      color: Pallete.gradient4,
+                        onPressed: () async{
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: Pallete.white.withOpacity(1),
+                                title: const Text("Attention!", style: TextStyle(
+                                    color: Pallete.gradient4,
+                                    fontWeight: FontWeight.bold
+                                ),),
+                                content: const Text('You are required to scan QR code?',
+                                  style: TextStyle(
+                                      color: Pallete.backgroundColor,
                                       fontWeight: FontWeight.bold
                                   ),),
-                                  content: const Text('Are you sure you want to shutdown the app?',
-                                    style: TextStyle(
-                                        color: Pallete.backgroundColor,
-                                        fontWeight: FontWeight.bold
-                                    ),),
-                                  actions: <Widget>[
-                                    Center(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () async{
-                                              await storageController.storeData("janusConnection", "unregistered");
-                                              exit(0);
-                                            },
-                                            style: ButtonStyle(
-                                              backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                            ),
-                                            child:  const Text('Shutdown',
-                                              style: TextStyle(
-                                                color: Pallete.white,
-                                                fontWeight: FontWeight.w900,
-                                              ),),
+                                actions: <Widget>[
+                                  Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () async{
+                                            await storageController.removeData("gateway");
+                                            await storageController.removeData("base");
+                                            await storageController.removeData("appKey");
+                                            await storageController.removeData("androidHost");
+                                            await storageController.removeData("appId");
+                                            await storageController.removeData("accessToken");
+                                            await storageController.storeData("janusConnection", "unregistered");
+                                            exit(0);
+                                          },
+                                          style: ButtonStyle(
+                                            backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
                                           ),
-                                          TextButton(
-                                            child: const Text('Close', style: TextStyle(
-                                                color: Pallete.backgroundColor,
-                                                fontWeight: FontWeight.bold
+                                          child:  const Text('Agree',
+                                            style: TextStyle(
+                                              color: Pallete.white,
+                                              fontWeight: FontWeight.w900,
                                             ),),
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                        TextButton(
+                                          child: const Text('Close', style: TextStyle(
+                                              color: Pallete.backgroundColor,
+                                              fontWeight: FontWeight.bold
+                                          ),),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                          icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Pallete.gradient5
+                        ),
+                        icon: const Icon(Icons.directions_boat, color: Pallete.gradient4),
+                        label: const Text(
+                          "Switch Ship",
+                          style: TextStyle(
+                              color: Pallete.backgroundColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async{
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: Pallete.white.withOpacity(1),
+                                title: const Text("Diavox Rise", style: TextStyle(
+                                    color: Pallete.gradient4,
+                                    fontWeight: FontWeight.bold
+                                ),),
+                                content: const Text('Are you sure you want to shutdown the app?',
+                                  style: TextStyle(
+                                      color: Pallete.backgroundColor,
+                                      fontWeight: FontWeight.bold
+                                  ),),
+                                actions: <Widget>[
+                                  Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () async{
+                                            await storageController.storeData("janusConnection", "unregistered");
+                                            exit(0);
+                                          },
+                                          style: ButtonStyle(
+                                            backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                          ),
+                                          child:  const Text('Shutdown',
+                                            style: TextStyle(
+                                              color: Pallete.white,
+                                              fontWeight: FontWeight.w900,
+                                            ),),
+                                        ),
+                                        TextButton(
+                                          child: const Text('Close', style: TextStyle(
+                                              color: Pallete.backgroundColor,
+                                              fontWeight: FontWeight.bold
+                                          ),),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3),
                         label: const Text(
                           "Disconnect",
                           style: TextStyle(
@@ -563,8 +672,8 @@ class MainFrameState extends State<MainFrame>{
                           _scaffoldKey.currentState!.closeDrawer();
                         },
                         icon:  Icon(
-                          Icons.bar_chart_sharp,
-                          color: Pallete.white.withOpacity(0.7)
+                            Icons.bar_chart_sharp,
+                            color: Pallete.white.withOpacity(0.7)
                         ),
                         label:  Text(
                           "Close Sidebar",
@@ -577,8 +686,8 @@ class MainFrameState extends State<MainFrame>{
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Pallete.backgroundColor.withOpacity(0.7),
                           side:  const BorderSide(
-                            color: Pallete.white,
-                            width: 2
+                              color: Pallete.white,
+                              width: 2
                           ),
                         ),
                       ),
@@ -654,7 +763,7 @@ class MainFrameState extends State<MainFrame>{
     );
   }
 
-  checkingSipRegistrationWidget(){
+  Widget checkingSipRegistrationWidget(){
     return  Scaffold(
         body: SafeArea(
           child: Center(

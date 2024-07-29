@@ -51,26 +51,6 @@ class _MessagesWidgetState extends State<MessagesWidget> {
           ElevatedButton(
             onPressed: () async {
               try {
-                await riseDatabase.insertHistory("819", "incoming");
-              } on PlatformException catch (e) {
-                print("Failed ${e.message}.");
-              }
-            },
-            child: const Text("Insert Incoming"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await riseDatabase.insertHistory("820", "outgoing");
-              } on PlatformException catch (e) {
-                print("Failed ${e.message}.");
-              }
-            },
-            child: const Text("Insert Outgoing"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
                 final dynamic histories = await riseDatabase.selectLastCallHistory();
 
                 print(histories['extension']);
@@ -79,40 +59,6 @@ class _MessagesWidgetState extends State<MessagesWidget> {
               }
             },
             child: const Text("Get All History "),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                invoke("hangup");
-              } on PlatformException catch (e) {
-                print("Failed to stop audio track: '${e.message}'.");
-              }
-            },
-            child: const Text("Stop Audio track"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                FlutterBackgroundService().invoke('enableSpeakerMode',{
-                  'mode' : true
-                });
-              } on PlatformException catch (e) {
-                print("Failed to stop audio track: '${e.message}'.");
-              }
-            },
-            child: const Text("Speaker Phone TRUE"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                FlutterBackgroundService().invoke('enableSpeakerMode',{
-                  'mode' : false
-                });
-              } on PlatformException catch (e) {
-                print("Failed to stop audio track: '${e.message}'.");
-              }
-            },
-            child: const Text("Speaker Phone FALSE"),
           ),
         ],
       ),

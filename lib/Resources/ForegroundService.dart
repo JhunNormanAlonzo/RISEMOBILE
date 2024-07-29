@@ -91,9 +91,14 @@ void onStart(ServiceInstance service) async {
 
 
 
+    service.on('disconnectJanus').listen((event) {
+      backJanus.disconnectJanusClient();
+    });
+
+
 
     service.on('testerMethod').listen((event) {
-      backJanus.testerMethod();
+
     });
 
 

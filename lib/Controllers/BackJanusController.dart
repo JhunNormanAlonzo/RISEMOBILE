@@ -336,7 +336,7 @@ class BackJanusController{
 
     print("the rtc is : $rtc");
     await sip?.handleRemoteJsep(rtc);
-    await localStreamInitializer();
+    localStreamInitializer();
 
     var answer = await sip?.createAnswer();
     await sip?.accept(sessionDescription: answer);
