@@ -9,6 +9,7 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
@@ -100,6 +101,19 @@ void onStart(ServiceInstance service) async {
     service.on('testerMethod').listen((event) {
 
     });
+
+
+    service.on('initializeWebRTCStack').listen((event) async{
+      await backJanus.sip?.initializeWebRTCStack();
+    });
+
+
+    service.on('handleRemoteJsep').listen((event) async{
+      RTCSessionDescription? remoteOffer = event?['remoteOffer'];
+      await backJanus.sip?.handleRemoteJsep(remoteOffer);
+    });
+
+
 
 
 

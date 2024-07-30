@@ -15,6 +15,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
+import 'package:rise/Resources/Function.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
@@ -50,6 +51,7 @@ class _OnCallWidgetState extends State<OnCallWidget> {
   @override
   void initState() {
     super.initState();
+
     settingToNormalSpeaker();
   }
 

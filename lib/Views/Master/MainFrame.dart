@@ -119,7 +119,6 @@ class MainFrameState extends State<MainFrame>{
           if(outgoing == 1){
             navigationProvider.showOnCallWidget();
           }
-
         }else if(msg == "SipIncomingCallEvent"){
           callProvider.setIn();
           navigationProvider.showOnCallWidget();

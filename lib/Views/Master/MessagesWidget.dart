@@ -60,6 +60,15 @@ class _MessagesWidgetState extends State<MessagesWidget> {
             },
             child: const Text("Get All History "),
           ),
+
+          ElevatedButton(
+            onPressed: ()  {
+
+              invoke("disposeJanusClient");
+
+            },
+            child: const Text("Stop"),
+          ),
         ],
       ),
     );

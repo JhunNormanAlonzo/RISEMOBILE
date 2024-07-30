@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:audio_session/audio_session.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -56,7 +57,8 @@ class BackJanusController{
 
 
   localStreamInitializer() async{
-     mediaStream =  await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
+     MediaStream? temp = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
+     mediaStream = temp;
   }
 
 
@@ -90,7 +92,9 @@ class BackJanusController{
           RegExp regex = RegExp(r":(.+)@");
           Match match = regex.firstMatch(callerString) as Match;
           String number = match.group(1)!;
-
+          await sip?.initializeWebRTCStack();
+          rtc = even.jsep;
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipIncomingCallEvent");
           await storageController.storeData("caller", number);
           await riseDatabase.insertHistory(number, "incoming");
           storageController.storeData("callStatus", "incoming");
@@ -98,15 +102,15 @@ class BackJanusController{
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
 
 
-
-          IsolateNameServer.lookupPortByName('backIsolate')?.send('SipIncomingCallEvent');
-
           debugPrint("Executing delayed WebRTC initialization and jsep handling");
 
-          rtc = even.jsep;
+          // rtc = even.jsep;
           debugPrint("sending set ready");
 
-          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
+
+
+
+
 
           if(lifecycle == NotificationLifeCycle.Background){
             final caller = await storageController.getData("caller");
@@ -130,18 +134,17 @@ class BackJanusController{
         }
         if (data is SipAcceptedEvent) {
           debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT RECEIVED----------------------------------------------");
-          await sip?.handleRemoteJsep(even.jsep);
+          RTCSessionDescription? remoteOffer = even.jsep;
+          await sip?.handleRemoteJsep(remoteOffer);
           await riseDatabase.setAccepted(1);
           IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipAcceptedEvent');
           debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT DONE----------------------------------------------");
           // navigationProvider.showOnCallWidget();
         }
         if (data is SipHangupEvent) {
+          // sip?.dispose();
+          // session.dispose();
           await sip?.webRTCHandle?.peerConnection?.close();
-          sip?.webRTCHandle?.peerConnection = null;
-          print("local stream start");
-          print(mediaStream);
-          print("local stream end");
           await stopAllTracksAndDispose(mediaStream);
           riseDatabase.setAccepted(0);
           debugPrint("--------------------------------------HANGUP EVENT RECEIVED----------------------------------------------");
@@ -169,6 +172,7 @@ class BackJanusController{
           debugPrint("--------------------------------------SipMissedCallEvent EVENT RECEIVED----------------------------------------------");
         }
         if (data is SipProceedingEvent) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED----------------------------------------------");
           debugPrint("--------------------------------------Proceeding | Ringing----------------------------------------------");
           debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED DONE----------------------------------------------");
@@ -178,11 +182,13 @@ class BackJanusController{
           debugPrint("--------------------------------------SipProgressEvent EVENT RECEIVED----------------------------------------------");
         }
         if (data is SipRingingEvent) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED----------------------------------------------");
           debugPrint("--------------------------------------Ringing----------------------------------------------");
           debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED DONE----------------------------------------------");
         }
         if (data is SipAcceptedEventResult) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipAcceptedEventResult EVENT RECEIVED----------------------------------------------");
         }
       }, onError: (error) async {
@@ -216,7 +222,8 @@ class BackJanusController{
   hangup() async{
     debugPrint("**********************************Hangup Call*************************************");
     await sip?.webRTCHandle?.peerConnection?.close();
-    sip?.webRTCHandle?.peerConnection = null;
+    // sip?.dispose();
+    // session.dispose();
     await sip?.hangup();
   }
 
@@ -312,12 +319,10 @@ class BackJanusController{
 
 
   makeCall(mailbox, androidHost) async {
-
     await riseDatabase.setActive("outgoing");
     var newValue = "sip:$mailbox@$androidHost";
     debugPrint("Passing to make call : $newValue");
     await sip?.initializeWebRTCStack();
-
     await localStreamInitializer();
     var offer = await sip?.createOffer(videoRecv: false, audioRecv: true);
     await sip?.call(newValue, offer: offer, autoAcceptReInvites: false);
@@ -330,16 +335,11 @@ class BackJanusController{
   }
 
   accept() async{
-    if (rtc == null) {
-      throw Exception("RTCSessionDescription not available. Ensure proper retrieval from incoming call event.");
-    }
-
-    print("the rtc is : $rtc");
+    await localStreamInitializer();
     await sip?.handleRemoteJsep(rtc);
-    localStreamInitializer();
-
     var answer = await sip?.createAnswer();
     await sip?.accept(sessionDescription: answer);
     debugPrint("**********************************Call Accepted*************************************");
   }
 }
+
