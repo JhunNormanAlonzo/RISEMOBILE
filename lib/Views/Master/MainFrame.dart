@@ -47,7 +47,6 @@ class MainFrame extends StatefulWidget {
 
 class MainFrameState extends State<MainFrame>{
 
-
   final port = ReceivePort();
 
   int selectedIndex = 0;
@@ -287,86 +286,23 @@ class MainFrameState extends State<MainFrame>{
                   },
                 ),
                 const SizedBox(width: 20),
-                InkWell(
-                  onTap: () {
-                    // Perform your action on tap
-                    debugPrint("Janus status $janusConnection");
-                    if (janusConnection == "registered") {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            backgroundColor: Pallete.white.withOpacity(1),
-                            title: const Text("Un-Register ?", style: TextStyle(
-                                color: Pallete.gradient4,
-                                fontWeight: FontWeight.bold
-                            ),),
-                            content: const Text('Are you sure you want to unregister to webrtc?',
-                              style: TextStyle(
-                                  color: Pallete.backgroundColor,
-                                  fontWeight: FontWeight.bold
-                              ),),
-                            actions: <Widget>[
-                              Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () async{
-                                        await storageController.storeData("janusConnection", "unregistered");
-                                        setState(() {
-                                          janusConnection = "unregistered";
-                                        });
-                                        FlutterBackgroundService().invoke('unRegister');
-                                        Navigator.of(context).pop();
-                                      },
-                                      style: ButtonStyle(
-                                        backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                      ),
-                                      child:  const Text('Proceed',
-                                        style: TextStyle(
-                                          color: Pallete.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),),
-                                    ),
-                                    TextButton(
-                                      child: const Text('Close', style: TextStyle(
-                                          color: Pallete.backgroundColor,
-                                          fontWeight: FontWeight.bold
-                                      ),),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }else if(janusConnection == "unregistered"){
-                      navigationProvider.setIndex(4);
-                    }
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.all(8.0),
-                    padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Background color if needed
-                      border: Border.all(
-                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
-                        width: 2.0, // Border width
-                      ),
-                      borderRadius: BorderRadius.circular(8.0), // Border radius
+                Container(
+                  margin: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Background color if needed
+                    border: Border.all(
+                      color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
+                      width: 2.0, // Border width
                     ),
-                    child: Text(
-                      janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
-                      style: TextStyle(
-                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                    borderRadius: BorderRadius.circular(8.0), // Border radius
+                  ),
+                  child: Text(
+                    janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
+                    style: TextStyle(
+                      color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -465,6 +401,7 @@ class MainFrameState extends State<MainFrame>{
                                               setState(() {
                                                 janusConnection = "unregistered";
                                               });
+                                              invoke('hangup');
                                               FlutterBackgroundService().invoke('unRegister');
                                               Navigator.of(context).pop();
                                             },

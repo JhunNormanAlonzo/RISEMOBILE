@@ -1,13 +1,16 @@
 
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_encrypt_plus/flutter_encrypt_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:just_audio/just_audio.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/GeneralConfiguration.dart';
+import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyToast.dart';
 
 class ApiController{
@@ -40,6 +43,52 @@ class ApiController{
       }
       return androidHost;
   }
+
+  Future <String> checkSipRegistration() async{
+    final mailboxNumber = await storageController.getData("mailboxNumber");
+    final base = await storageController.getData("base");
+    final route = "$base/api/mobile/check-sip-registration/$mailboxNumber";
+    final response = await http.get(Uri.parse(route), headers: await getHeaders());
+    final registrationStatus = response.body;
+    return registrationStatus;
+  }
+
+  Future <String> countSipRegistered() async{
+    final base = await storageController.getData("base");
+    final route = "$base/api/mobile/count-sip-registrations";
+    final response = await http.get(Uri.parse(route), headers: await getHeaders());
+    final count = response.body;
+    return count;
+  }
+
+
+
+  Future <void> syncSipRegistration() async{
+    final base = await storageController.getData("base");
+    final route = "$base/api/mobile/sync-sip-registrations";
+    await http.get(Uri.parse(route), headers: await getHeaders());
+  }
+
+  Future <dynamic> getMessages() async{
+    final mailboxNumber = await storageController.getData("mailboxNumber");
+    final base = await storageController.getData("base");
+    final route = "$base/api/mobile/messages/$mailboxNumber/directory/messages";
+    final response = await http.get(Uri.parse(route), headers: await getHeaders());
+    List<dynamic> parsedJson = jsonDecode(response.body);
+    return parsedJson;
+  }
+
+  Future <void> playMailbox(filename) async{
+    final base = await storageController.getData("base");
+    final route = "$base/voicemail/messages/$filename";
+    HttpOverrides.global = MyHttpOverrides();
+    final player = AudioPlayer();
+    player.setUrl(route);
+    await player.play();
+  }
+
+
+
 
   //Storing needed user data to local storage.
   Future<dynamic> getUserData() async {
