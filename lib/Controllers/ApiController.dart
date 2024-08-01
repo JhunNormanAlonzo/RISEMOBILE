@@ -69,13 +69,56 @@ class ApiController{
     await http.get(Uri.parse(route), headers: await getHeaders());
   }
 
-  Future <dynamic> getMessages() async{
+
+  Future <Map<String, dynamic>> getMailboxData() async {
     final mailboxNumber = await storageController.getData("mailboxNumber");
+    final base = await storageController.getData('base');
+    final route = "$base/api/mobile/mailbox_data/$mailboxNumber";
+    final result = await http.get(Uri.parse(route), headers: await getHeaders());
+    final data = jsonDecode(result.body) as Map<String, dynamic>;
+    return data;
+  }
+
+
+
+  Future <void> deleteMessage(id) async{
     final base = await storageController.getData("base");
-    final route = "$base/api/mobile/messages/$mailboxNumber/directory/messages";
+    final route = "$base/api/mobile/message/$id";
+    await http.delete(Uri.parse(route), headers: await getHeaders());
+  }
+
+  Future <String> getDownloadLink(file) async{
+    final base = await storageController.getData("base");
+    final route = "$base/voicemail/messages/$file.wav";
+    return route;
+  }
+
+
+  Future<void> setReadMessage(int id) async {
+    final base = await storageController.getData("base");
+    final route = "$base/api/mobile/read/message";
+    final body = jsonEncode({
+      'id' : id,
+      'is_new': 0
+    });
+    final response = await http.put(
+      Uri.parse(route),
+      headers: await getHeaders(),
+      body: body,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update message');
+    }
+  }
+
+  Future <Map<String, dynamic>> getMessages() async{
+    final mailbox = await getMailboxData();
+    final mailboxNumber = mailbox['mailbox_number'];
+    final base = await storageController.getData("base");
+    final route = "$base/api/get-messages/$mailboxNumber";
     final response = await http.get(Uri.parse(route), headers: await getHeaders());
-    List<dynamic> parsedJson = jsonDecode(response.body);
-    return parsedJson;
+    return jsonDecode(response.body);
   }
 
   Future <void> playMailbox(filename) async{
@@ -86,7 +129,6 @@ class ApiController{
     player.setUrl(route);
     await player.play();
   }
-
 
 
 

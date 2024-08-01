@@ -39,12 +39,13 @@ Future<void> main() async {
     onDismissActionReceivedMethod: AwesomeNotificationHandler.onDismissActionReceivedMethod,
   );
 
+  await coreController.requestPermission(Permission.storage);
   await coreController.requestPermission(Permission.camera);
   await coreController.requestPermission(Permission.audio);
   await coreController.requestPermission(Permission.storage);
   await coreController.requestPermission(Permission.microphone);
   await coreController.requestPermission(Permission.notification);
-  await coreController.requestPermission(Permission.criticalAlerts);
+
 
 
   storageController.storeData("janusConnection", "unregistered");

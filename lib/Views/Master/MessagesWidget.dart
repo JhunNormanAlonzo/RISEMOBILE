@@ -1,17 +1,21 @@
 
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:rise/Controllers/ApiController.dart';
+import 'package:rise/Controllers/CoreController.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/Pallete.dart';
 
 class MessagesWidget extends StatefulWidget {
   const MessagesWidget({super.key});
-
   @override
   State<MessagesWidget> createState() => _MessagesWidgetState();
 }
@@ -19,8 +23,8 @@ class MessagesWidget extends StatefulWidget {
 class _MessagesWidgetState extends State<MessagesWidget> {
 
   bool isToggled = false;
-  Future<List<dynamic>>? messages;
-  late AudioPlayer audioPlayer;
+  Future<Map<String, dynamic>>? messages;
+
 
   @override
   void initState() {
@@ -41,55 +45,21 @@ class _MessagesWidgetState extends State<MessagesWidget> {
     }
   }
 
-  deleteMessage(fileName){
-    debugPrint("deleted : $fileName");
+  deleteMessage(id) async{
+    await api.deleteMessage(id);
+    debugPrint("deleted : $id");
   }
 
+  downloadLink(file) async{
+    final link = await api.getDownloadLink(file);
+    return link;
+  }
 
-  //
-  //
-  // void _playVm(String playVm){
-  //   audioPlayer = AudioPlayer().setSourceUrl(playVm) as AudioPlayer;
-  //   showDialog(
-  //       context: context,
-  //       builder: (context) {
-  //         return AlertDialog(surfaceTintColor: Colors.blueAccent,
-  //             content: SizedBox(
-  //               width: MediaQuery.of(context).size.width/1.2,
-  //               height: MediaQuery.of(context).size.height/6.0,
-  //               child: Column(mainAxisAlignment: MainAxisAlignment.center,
-  //                 children: [
-  //                   StreamBuilder(
-  //                     stream: _positionDataStream,
-  //                     builder: (context,snapshot){
-  //                       final positionData = snapshot.data;
-  //                       return ProgressBar(
-  //                         barHeight: 8,
-  //                         baseBarColor: Colors.grey[800],
-  //                         bufferedBarColor: Colors.grey,
-  //                         progressBarColor: Colors.blue,
-  //                         thumbColor: Colors.red,
-  //                         timeLabelTextStyle: const TextStyle(
-  //                             color: Colors.black,
-  //                             fontWeight: FontWeight.w600
-  //                         ),
-  //                         progress: positionData?.position ?? Duration.zero,
-  //                         buffered: positionData?.bufferedPosition ?? Duration.zero,
-  //                         total: positionData?.duration ?? Duration.zero,
-  //                         onSeek: audioPlayer.seek,
-  //                       );
-  //                     },
-  //                   ),
-  //                   const SizedBox(height: 20,),
-  //                   Controls(audioPlayer: audioPlayer),
-  //                 ],
-  //               ),
-  //             )
-  //         );
-  //       }
-  //   );
-  //
-  // }
+  setReadMessage(id) async{
+    await api.setReadMessage(id);
+    debugPrint("read : $id");
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,35 +69,33 @@ class _MessagesWidgetState extends State<MessagesWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: FutureBuilder<dynamic>(
+              child: FutureBuilder<Map<String, dynamic>>(
                 future: messages,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        "Error: ${snapshot.error}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  } else if (snapshot.hasData && snapshot.data.isNotEmpty) {
+                  if(snapshot.hasData){
+                    final data = snapshot.data!;
+                    final messages = data['data'] as List<dynamic>;
                     return ListView.builder(
-                      itemCount: snapshot.data.length,
+                      itemCount: messages.length,
                       itemBuilder: (context, index) {
-
-                        String fileName = snapshot.data[index];
+                        final data = messages[index];
+                        final fileName = data['message_file'];
+                        final duration = formatSecondsAsHHMM(data['duration']);
+                        final status = data['is_new'] == 0 ? "played" : "not yet played";
                         return Dismissible(
                           key: UniqueKey(),
                           onDismissed: (direction) {
-                            deleteMessage(fileName);
-                            // ScaffoldMessenger.of(context).showSnackBar(
-                            //   SnackBar(content: Text("$fileName deleted")),
-                            // );
+                            // deleteMessage(data['id']);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                               SnackBar(
+                                   backgroundColor: Pallete.backgroundColor.withOpacity(0.8),
+                                   content: const Text(
+                                  "Message deleted successfully.",
+                                  style: TextStyle(color: Pallete.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                )
+                               ),
+                            );
                           },
                           background: Container(
                             color: Pallete.gradient4,
@@ -158,36 +126,87 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                               leading: CircleAvatar(
                                 backgroundColor: Colors.blue,
                                 child: Text(
-                                  (index + 1).toString(),
+                                    data['id'].toString(),
                                   style: const TextStyle(color: Colors.white),
                                 ),
                               ),
                               title: Text(
-                                fileName,
+                                "Message from ${data['source_extension']}",
                                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
-                              // subtitle: Text(
-                              //   'Duration: 04:30', // Placeholder for actual metadata
-                              //   style: TextStyle(color: Colors.grey[400]),
-                              // ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.play_arrow, color: Colors.white),
-                                onPressed: () async{
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Not yet playable lasse.")),
-                                  );
-                                },
+                              subtitle: Text(
+                                "Duration: $duration",
+                                style: TextStyle(color: Colors.grey[400]),
                               ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min, // Avoid excessive space
+                                children: [
+                                  Text(
+                                    status,
+                                    style:  TextStyle(color: status == "played" ? Pallete.gradient1 : Pallete.gradient3, fontSize: 15),
+                                  ),
+                                  // const Icon(Icons.play_arrow, color: Colors.white),
+                                ],
+                              ),
+                              onLongPress: () async{
+                                final link = await downloadLink(data['message_file']);
+                                FileDownloader.downloadFile(
+                                  url: link.replaceFirst("https", "http"),
+                                  onProgress: (name, progress){
+                                    print("Downloading $name");
+                                  },
+                                  onDownloadCompleted:(value){
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(
+                                        "File saved in $value",
+                                        style: const TextStyle(color: Pallete.gradient1, fontSize: 18, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                    );
+                                  },
+                                  onDownloadError: (value){
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(
+                                        value.toString(),
+                                        style: const TextStyle(color: Pallete.gradient1, fontSize: 20, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                    );
+                                  }
+                                );
+                                // ScaffoldMessenger.of(context).showSnackBar(
+                                //    SnackBar(content: Text(
+                                //       link,
+                                //     style: const TextStyle(color: Pallete.gradient1, fontSize: 20, fontWeight: FontWeight.bold),
+                                //     textAlign: TextAlign.center,
+                                //   )),
+                                // );
+                              },
+                              onTap: () async{
+                                final link = await downloadLink(data['message_file']);
+                                final audioPlayer = AudioPlayer();
+                                await audioPlayer.setUrl(link.replaceFirst("https","http"));
+                                await audioPlayer.play();
+                                setReadMessage(data['id']);
+                                // ScaffoldMessenger.of(context).showSnackBar(
+                                //   const SnackBar(content: Text(
+                                //     "Played",
+                                //     style: TextStyle(color: Pallete.gradient1, fontSize: 20, fontWeight: FontWeight.bold),
+                                //     textAlign: TextAlign.center,
+                                //   )),
+                                // );
+                                _syncMessages();
+                              },
                             ),
                           ),
                         );
                       },
                     );
-                  } else {
-                    return const Center(
-                      child: Text('No audio files available', style: TextStyle(color: Colors.white)),
-                    );
+
+                  }else{
+                    return const Text("No data", style: TextStyle(color: Colors.white),);
                   }
+
                 },
               ),
             ),
@@ -197,20 +216,41 @@ class _MessagesWidgetState extends State<MessagesWidget> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           try {
-            final recordings = await api.getMessages();
-            setState(() {
-              messages = Future.value(recordings);
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Messages updated...")),
-            );
+            // final response = await api.getMessages();
+            // print("Load messages: ${response}.");
+            // final link = await downloadLink("1722532754-805-819-00000124");
+
+            // if(status.isGranted){
+
+
+              // FileDownloader.cancelDownload(1227);
+            // }
+
+            // FileDownloader.cancelDownload(1222);
+            // print("link : $link.");
+            _syncMessages();
+            // setState(() {
+            //   messages = Future.value(recordings);
+            // });
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   const SnackBar(content: Text("Messages updated...")),
+            // );
           } on PlatformException catch (e) {
             print("Failed to load messages: ${e.message}.");
           }
         },
-        backgroundColor: Pallete.gradient4,
-        child: const Icon(Icons.refresh, color: Pallete.white,),
+        shape: const CircleBorder(),
+        // backgroundColor: Colors.transparent,
+        child: const Icon(Icons.refresh, color: Pallete.gradient4,),
       ),
     );
   }
+}
+
+formatSecondsAsHHMM(int seconds) {
+  final duration = Duration(seconds: seconds);
+  final hours = duration.inHours.remainder(24).toString().padLeft(2, '0');
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final secs = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$hours:$minutes:$secs';
 }
