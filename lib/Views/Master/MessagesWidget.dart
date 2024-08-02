@@ -82,6 +82,7 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                         final fileName = data['message_file'];
                         final duration = formatSecondsAsHHMM(data['duration']);
                         final status = data['is_new'] == 0 ? "played" : "not yet played";
+                        final createdAt = data['created_at'];
                         return Dismissible(
                           key: UniqueKey(),
                           onDismissed: (direction) {
@@ -123,12 +124,9 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: ListTile(
-                              leading: CircleAvatar(
+                              leading: const CircleAvatar(
                                 backgroundColor: Colors.blue,
-                                child: Text(
-                                    data['id'].toString(),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
+                                child: Icon(Icons.record_voice_over, color: Colors.white)
                               ),
                               title: Text(
                                 "Message from ${data['source_extension']}",
@@ -138,12 +136,16 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                                 "Duration: $duration",
                                 style: TextStyle(color: Colors.grey[400]),
                               ),
-                              trailing: Row(
+                              trailing: Column(
                                 mainAxisSize: MainAxisSize.min, // Avoid excessive space
                                 children: [
                                   Text(
                                     status,
                                     style:  TextStyle(color: status == "played" ? Pallete.gradient1 : Pallete.gradient3, fontSize: 15),
+                                  ),
+                                  Text(
+                                    createdAt,
+                                    style:  const TextStyle(color: Pallete.gradient1 , fontSize: 15),
                                   ),
                                   // const Icon(Icons.play_arrow, color: Colors.white),
                                 ],
