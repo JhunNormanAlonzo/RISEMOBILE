@@ -1,6 +1,7 @@
 
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
@@ -96,83 +97,76 @@ class _DialpadWidgetState extends State<DialpadWidget> {
   @override
   Widget build(BuildContext context) {
     final callProvider = Provider.of<CallProvider>(context, listen: false);
+    final height = MediaQuery.sizeOf(context).height;
+    final width = MediaQuery.sizeOf(context).width;
+    final padding = (width * 0.6/ 3.5).ceil();
     return Scaffold(
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-              child: InputField(
-                placeholder: '',
-                controller: _controller,
-                showBorder: false,
-                fontSize: 35,
-                isEnabled: false,
-              ),
-            ),
+          InputField(
+            placeholder: "",
+            controller: _controller,
+            showBorder: false,
+            fontSize: 20,
+            isEnabled: false,
           ),
           Expanded(
-            flex: 2, // Adjust the flex value as needed
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 60),
-              child: GridView.builder(
-                itemCount: dialPadNumbers.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  String number = dialPadNumbers[index];
-                  return DialButton(
-                    number: number,
-                    onPressed: () => _onButtonPressed(number),
-                  );
-                },
-              ),
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-                border: Border(
-                    top: BorderSide(
-                        color: Colors.white24,
-                        width: 1.0
-                    )
-                )
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, top: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  FloatingActionButton(
-                    onPressed: (){
-                      callProvider.setOut();
-                      _onDialPressed();
+            child: Center(
+              child: FractionallySizedBox(
+                widthFactor: 1, // Adjust as needed
+                heightFactor: 1, // Adjust as needed
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding.toDouble()),
+                  child: GridView.builder(
+                    itemCount: dialPadNumbers.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
+                      childAspectRatio: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      String number = dialPadNumbers[index];
+                      return DialButton(
+                        number: number,
+                        onPressed: () => _onButtonPressed(number),
+                      );
                     },
-                    backgroundColor: Colors.green,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.phone, color: Pallete.white),
                   ),
-                  FloatingActionButton(
-                    onPressed: _onClearPressed,
-                    backgroundColor: Pallete.gradient3,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.delete, color: Pallete.white),
-                  ),
-                  FloatingActionButton(
-                    onPressed: _onBackspacePressed,
-                    backgroundColor: Colors.red,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.backspace, color: Pallete.white),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              FloatingActionButton(
+                onPressed: () {
+                  callProvider.setOut();
+                  _onDialPressed();
+                },
+                backgroundColor: Colors.green,
+                shape: const CircleBorder(),
+                mini: true,
+                child: const Icon(Icons.phone, color: Colors.white),
+              ),
+              FloatingActionButton(
+                onPressed: _onClearPressed,
+                backgroundColor: Pallete.gradient3,
+                shape: const CircleBorder(),
+                mini: true,
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              FloatingActionButton(
+                onPressed: _onBackspacePressed,
+                backgroundColor: Colors.red,
+                shape: const CircleBorder(),
+                mini: true,
+                child: const Icon(Icons.backspace, color: Colors.white),
+              ),
+            ],
+          )
+
         ],
       ),
     );
