@@ -10,7 +10,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -50,6 +49,21 @@ int selectedIndex = 0;
 late String janusConnection;
 
 bool showSipStatus = false;
+late bool showMessage;
+
+
+Future<int> getMessageCount() async {
+  final response = await api.getMessages();
+  final count = response['total_messages'];
+  return count;
+}
+
+Future<void> _syncMessageWaitingStatus() async {
+  final count = await getMessageCount();
+  setState(() {
+    showMessage = count > 0;
+  });
+}
 
 @override
 void initState(){
@@ -58,7 +72,7 @@ void initState(){
 
   WidgetsBinding.instance.addPostFrameCallback((_) async{
     await initializeService(); //to run websocket and janus background.
-
+    await _syncMessageWaitingStatus();
     IsolateNameServer.removePortNameMapping('mainIsolate');
     IsolateNameServer.registerPortWithName(port.sendPort, 'mainIsolate');
     final navigationProvider =  Provider.of<NavigationProvider>(context, listen: false);
@@ -126,10 +140,21 @@ void initState(){
         navigationProvider.showFireAlarmWidget();
         myAudio.danger();
         FlutterBackgroundService().invoke('startVibration');
+      }else if(msg.startsWith('MessageWaitingEvent-')){
+        final response = await api.getMessages();
+        print("total messages: ${response['total_messages']}.");
+        if(response['total_messages'] > 0){
+          setState(() {
+            showMessage = true;
+          });
+        }else{
+          setState(() {
+            showMessage = false;
+          });
+        }
       }else if(msg.startsWith('JanusError')){
         RegExp regExp = RegExp(r'error:\s(.*)\s\((\d+)\),');
         Match? match = regExp.firstMatch(msg);
-
         if (match != null) {
           String errorMessage = match.group(1) ?? '';
           String errorCode = match.group(2) ?? '';
@@ -251,37 +276,43 @@ Widget frame(BuildContext context){
   return Scaffold(
     key: _scaffoldKey,
     appBar: AppBar(
-      title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
-      actions: [
+      // title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
+      title: Row(
+        children: [
+          const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
+          const SizedBox(width: 20),
+          FutureBuilder<dynamic>(
+            future: storageController.getData("mailboxNumber"),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Row(
+                  children: [
+                    Text(
+                      snapshot.data!,
+                      style:  const TextStyle(
+                          color: Pallete.gradient1,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18
+                      ),
+                    ),
+                  ],
+                );
 
+              } else if (snapshot.hasError) {
+                return const Text('No Extension Detected');
+              }
+              return const CircularProgressIndicator();
+            },
+          ),
+        ],
+      ),
+      actions: [
         if(showSipStatus == true)...[
           Row(
             children: [
-              FutureBuilder<dynamic>(
-                future: storageController.getData("mailboxNumber"),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return Row(
-                      children: [
-                        Text(
-                          snapshot.data!,
-                          style:  const TextStyle(
-                              color: Pallete.gradient1,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18
-                          ),
-                        ),
-                        const Icon(Icons.extension, color: Pallete.gradient1),
-                      ],
-                    );
-
-                  } else if (snapshot.hasError) {
-                    return const Text('No Extension Detected');
-                  }
-                  return const CircularProgressIndicator();
-                },
-              ),
               const SizedBox(width: 20),
+              showMessage ? SwingingIcon(showMessage: true) : const SizedBox.shrink(),
+
               Container(
                 margin: const EdgeInsets.all(8.0),
                 padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
@@ -335,35 +366,35 @@ Widget frame(BuildContext context){
                   return const CircularProgressIndicator();
                 },
               ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: (){
-                        final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
-                        myAudio.stop();
-                        FlutterBackgroundService().invoke('stopVibration');
-                        navigationProvider.hideFireAlarmWidget();
-                      },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Pallete.backgroundColor
-                      ),
-
-                      label: const Text(
-                        "Stop Alarm",
-                        style: TextStyle(
-                            color: Pallete.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold
-                        ),
-                      ),
-                      icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
-                    ),
-                  ),
-                ],
-              ),
+              // const SizedBox(height: 20),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: [
+              //     Expanded(
+              //       child: ElevatedButton.icon(
+              //         onPressed: (){
+              //           final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
+              //           myAudio.stop();
+              //           FlutterBackgroundService().invoke('stopVibration');
+              //           navigationProvider.hideFireAlarmWidget();
+              //         },
+              //         style: ElevatedButton.styleFrom(
+              //             backgroundColor: Pallete.backgroundColor
+              //         ),
+              //
+              //         label: const Text(
+              //           "Stop Alarm",
+              //           style: TextStyle(
+              //               color: Pallete.white,
+              //               fontSize: 13,
+              //               fontWeight: FontWeight.bold
+              //           ),
+              //         ),
+              //         icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
+              //       ),
+              //     ),
+              //   ],
+              // ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -594,38 +625,6 @@ Widget frame(BuildContext context){
                   )
                 ],
               ),
-              const SizedBox(height: 60),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _scaffoldKey.currentState!.closeDrawer();
-                      },
-                      icon:  Icon(
-                          Icons.bar_chart_sharp,
-                          color: Pallete.white.withOpacity(0.7)
-                      ),
-                      label:  Text(
-                        "Close Sidebar",
-                        style: TextStyle(
-                            color: Pallete.white.withOpacity(0.7),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Pallete.backgroundColor.withOpacity(0.7),
-                        side:  const BorderSide(
-                            color: Pallete.white,
-                            width: 2
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              ),
             ],
           ),
         ),
@@ -770,6 +769,54 @@ void dispose() {
 
 }
 
+
+
+class SwingingIcon extends StatefulWidget {
+  final bool showMessage;
+
+  SwingingIcon({required this.showMessage});
+
+  @override
+  _SwingingIconState createState() => _SwingingIconState();
+}
+
+class _SwingingIconState extends State<SwingingIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: -0.1, end: 0.1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.showMessage
+        ? RotationTransition(
+      turns: _animation,
+      child: const Icon(Icons.mail, color: Pallete.gradient3, size: 20,),
+    )
+        : const SizedBox.shrink();
+  }
+}
 
 
 

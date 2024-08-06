@@ -10,8 +10,6 @@ import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Views/Master/MainFrame.dart';
-import 'package:top_snackbar_flutter/custom_snack_bar.dart';
-import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -86,8 +84,8 @@ class _LoginState extends State<Login> {
                   onPressed: () async {
                     final username = mailboxController.text;
                     final password = passwordController.text;
-                    print("username : $username");
-                    print("password : $password");
+                    debugPrint("username : $username");
+                    debugPrint("password : $password");
                     if (username.isEmpty || password.isEmpty) {
                       toast.warning(context, 'Please enter username and password.');
                       return; // Exit the function if fields are empty
@@ -103,7 +101,9 @@ class _LoginState extends State<Login> {
                         MaterialPageRoute(builder: (context) => const MainFrame()),
                       );
                     } else {
-                      toast.error(context, 'Username or Password incorrect.');
+                      if(mounted){
+                        toast.error(context, 'Username or Password incorrect.');
+                      }
                     }
                   }
               ),
@@ -114,6 +114,4 @@ class _LoginState extends State<Login> {
       ),
     );
   }
-
-
 }

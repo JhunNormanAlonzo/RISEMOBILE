@@ -13,6 +13,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
+import 'package:rise/Resources/Background/BackgroundMessageWaiting.dart';
 import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
 import 'package:rise/Resources/Janus/janus_client.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
@@ -37,6 +38,7 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   HttpOverrides.global = MyHttpOverrides();
   var backWebsocket = BackgroundWebsocket();
+  var messageWaitingSocket = BackgroundMessageWaiting();
   if (service is AndroidServiceInstance) {
 
     var backJanus = BackJanusController();
@@ -61,6 +63,7 @@ void onStart(ServiceInstance service) async {
         debugPrint("connectivity is wifi");
 
         backWebsocket.listen();
+        messageWaitingSocket.listen();
 
         await backJanus.initJanusClient();
 
