@@ -90,6 +90,24 @@ class RiseDatabase{
     );
   }
 
+  Future<void> deleteHistory(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'call_histories',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> clearHistory() async {
+    final db = await database;
+
+    await db.delete(
+      'call_histories',
+    );
+  }
+
 
 
 

@@ -255,7 +255,7 @@ Widget frame(BuildContext context){
   final navigationProvider = Provider.of<NavigationProvider>(context);
   final List<Widget> widgets = [
     DialpadWidget(),
-    const MessagesWidget(),
+    // const MessagesWidget(),
     const CallHistoryWidget(),
     const MessagesWidget(),
     const Settings(),
@@ -309,8 +309,8 @@ Widget frame(BuildContext context){
               showMessage ? SwingingIcon(showMessage: true) : const SizedBox.shrink(),
 
               Container(
-                margin: const EdgeInsets.all(8.0),
-                padding: const EdgeInsets.all(8.0), // Adjust the padding as needed
+                margin: const EdgeInsets.only(left: 10.0, right: 10.0),
+                padding: const EdgeInsets.all(2.0), // Adjust the padding as needed
                 decoration: BoxDecoration(
                   color: Colors.white, // Background color if needed
                   border: Border.all(
@@ -632,7 +632,7 @@ Widget frame(BuildContext context){
             Expanded(
               child: Center(
                 child: IndexedStack(
-                    index: janusConnection == "unregistered" ? 4 : navigationProvider.selectedIndex,
+                    index: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
                     children: widgets
                 ),
               ),
@@ -644,10 +644,10 @@ Widget frame(BuildContext context){
                   icon: Icon(Icons.dialpad),
                   label: 'Dialpad',
                 ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.record_voice_over),
-                  label: 'Records',
-                ),
+                // const BottomNavigationBarItem(
+                //   icon: Icon(Icons.record_voice_over),
+                //   label: 'Records',
+                // ),
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.history),
                   label: 'Call History',
@@ -674,19 +674,41 @@ Widget frame(BuildContext context){
                 ],
 
               ],
-              currentIndex: janusConnection == "unregistered" ? 4 : navigationProvider.selectedIndex,
+              currentIndex: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
               selectedItemColor: Colors.blue,
               unselectedItemColor: Colors.grey,
               onTap: (index) {
                 debugPrint("index : ${navigationProvider.selectedIndex}");
                 // if (!navigationProvider.showOnCall && index == 3) return;
-                janusConnection == "unregistered" ? navigationProvider.setIndex(4) : navigationProvider.setIndex(index) ;
+                janusConnection == "unregistered" ? navigationProvider.setIndex(3) : navigationProvider.setIndex(index) ;
               },
             ),
           ],
         )
     ),
   );
+  // return DefaultTabController(
+  //   length: 3, // Number of tabs
+  //   child: Scaffold(
+  //     appBar: AppBar(
+  //       title: Text('Top Navigation with Tabs'),
+  //       bottom: TabBar(
+  //         tabs: [
+  //           Tab(icon: Icon(Icons.home), text: 'Home'),
+  //           Tab(icon: Icon(Icons.search), text: 'Search'),
+  //           Tab(icon: Icon(Icons.account_circle), text: 'Profile'),
+  //         ],
+  //       ),
+  //     ),
+  //     body: TabBarView(
+  //       children: [
+  //         Center(child: Text('Home Page', style: TextStyle(color: Colors.white),)),
+  //         Center(child: Text('Search Page', style: TextStyle(color: Colors.white))),
+  //         Center(child: Text('Profile Page', style: TextStyle(color: Colors.white))),
+  //       ],
+  //     ),
+  //   ),
+  // );
 }
 
 Widget checkingSipRegistrationWidget(){

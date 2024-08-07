@@ -26,12 +26,12 @@ class _MessagesWidgetState extends State<MessagesWidget> {
 
   bool isToggled = false;
   Future<Map<String, dynamic>>? messages;
-
+  final audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
-    // _syncMessages();
+    _syncMessages();
   }
 
   _syncMessages() async {
@@ -72,12 +72,13 @@ class _MessagesWidgetState extends State<MessagesWidget> {
           children: [
             Expanded(
               child: FutureBuilder<Map<String, dynamic>>(
-                future: api.getMessages(),
+                future: messages,
                 builder: (context, snapshot) {
                   if(snapshot.hasData){
                     final data = snapshot.data!;
                     final messages = data['data'] as List<dynamic>;
                     if(data['total_messages'] > 0){
+
                       return ListView.builder(
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
@@ -89,6 +90,7 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                           return Dismissible(
                             key: UniqueKey(),
                             onDismissed: (direction) {
+                              audioPlayer.stop();
                               deleteMessage(data['id']);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -193,7 +195,7 @@ class _MessagesWidgetState extends State<MessagesWidget> {
                                 },
                                 onTap: () async{
                                   final link = await downloadLink(data['message_file']);
-                                  final audioPlayer = AudioPlayer();
+                                  await audioPlayer.stop();
                                   await audioPlayer.setUrl(link.replaceFirst("https","http"));
                                   await audioPlayer.play();
                                   setReadMessage(data['id']);
@@ -248,8 +250,8 @@ class _MessagesWidgetState extends State<MessagesWidget> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           try {
-            final response = await api.getMessages();
-            print("Load messages: ${response}.");
+            // final response = await api.getMessages();
+            // print("Load messages: ${response}.");
             // final link = await downloadLink("1722532754-805-819-00000124");
 
             // if(status.isGranted){
@@ -260,7 +262,9 @@ class _MessagesWidgetState extends State<MessagesWidget> {
 
             // FileDownloader.cancelDownload(1222);
             // print("link : $link.");
-            // _syncMessages();
+            _syncMessages();
+            debugPrint("Loading messages...");
+
             // setState(() {
             //   messages = Future.value(recordings);
             // });
@@ -268,12 +272,12 @@ class _MessagesWidgetState extends State<MessagesWidget> {
             //   const SnackBar(content: Text("Messages updated...")),
             // );
           } on PlatformException catch (e) {
-            print("Failed to load messages: ${e.message}.");
+            debugPrint("Failed to load messages: ${e.message}.");
           }
         },
         shape: const CircleBorder(),
-        // backgroundColor: Colors.transparent,
-        child: const Icon(Icons.refresh, color: Pallete.gradient4,),
+        backgroundColor: Pallete.white.withOpacity(0.8),
+        child: const Icon(Icons.refresh, color: Pallete.gradient4),
       ),
     );
   }
