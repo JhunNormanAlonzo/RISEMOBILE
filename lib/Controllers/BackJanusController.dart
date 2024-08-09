@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:audio_session/audio_session.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
@@ -85,7 +86,7 @@ class BackJanusController{
       sip = await session!.attach<JanusSipPlugin>();
       sip?.typedMessages?.listen((even) async {
         Object data = even.event.plugindata?.data;
-
+        print("EVENT TRIGGERED : $data");
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
           String callerString = data.result?.username as String;
@@ -123,10 +124,10 @@ class BackJanusController{
                     autoDismissible: false,
                     duration: const Duration(seconds: 20)
                 ),
-                // actionButtons: [
-                //   NotificationActionButton(key: 'ACCEPT', label: 'Accept', color: Pallete.gradient4),
-                //   NotificationActionButton(key: 'DECLINE', label: 'Decline', color: Pallete.gradient3),
-                // ]
+                actionButtons: [
+                  NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default),
+                  NotificationActionButton(key: 'DECLINE', label: 'Decline', actionType: ActionType.DismissAction),
+                ]
             );
           }
 
@@ -141,6 +142,13 @@ class BackJanusController{
           debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT DONE----------------------------------------------");
           // navigationProvider.showOnCallWidget();
         }
+
+        if(data is SipUnRegisteredEvent){
+          debugPrint("--------------------------------------UN-REGISTERED EVENT RECEIVED----------------------------------------------");
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipUnRegisteredEvent');
+          debugPrint("--------------------------------------UN-REGISTERED EVENT DONE----------------------------------------------");
+        }
+
         if (data is SipHangupEvent) {
           // sip?.dispose();
           // session.dispose();
@@ -313,6 +321,7 @@ class BackJanusController{
         element.track?.enableSpeakerphone(mode);
       }
     });
+
   }
 
 

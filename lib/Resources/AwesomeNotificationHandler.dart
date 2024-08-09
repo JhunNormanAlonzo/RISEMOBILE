@@ -10,32 +10,33 @@ import 'package:rise/Resources/MyAudio.dart';
 
 class AwesomeNotificationHandler {
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
+    var backJanus = BackJanusController();
     final dynamic callStatus = await storageController.getData('callStatus');
     debugPrint("call status is : $callStatus");
     if(callStatus == "incoming"){
       IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
     }
 
-    // if(receivedAction.buttonKeyPressed == 'ACCEPT'){
-    //   debugPrint("Accept");
-    //   myAudio.stop();
-    //   backJanus.accept();
-    //   await riseDatabase.setAccepted(1);
-    //   // FlutterBackgroundService().invoke('accept');
-    // }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
-    //   debugPrint("Decline");
-    //   final outgoing = await riseDatabase.getStatus("outgoing");
-    //   final incoming = await riseDatabase.getStatus("incoming");
-    //   if(outgoing == 1){
-    //     backJanus.hangup();
-    //   }
-    //
-    //   if(incoming == 1){
-    //     backJanus.decline();
-    //   }
-    //
-    //   myAudio.stop();
-    // }
+    if(receivedAction.buttonKeyPressed == 'ACCEPT'){
+      debugPrint("Accept");
+      myAudio.stop();
+      backJanus.accept();
+      await riseDatabase.setActive("accepted");
+      // FlutterBackgroundService().invoke('accept');
+    }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
+      debugPrint("Decline");
+      final outgoing = await riseDatabase.getStatus("outgoing");
+      final incoming = await riseDatabase.getStatus("incoming");
+      if(outgoing == 1){
+        backJanus.hangup();
+      }
+
+      if(incoming == 1){
+        backJanus.decline();
+      }
+
+      myAudio.stop();
+    }
   }
 
   // Optionally handle notification created event

@@ -24,11 +24,13 @@ import 'package:rise/Views/Master/DialpadWidget.dart';
 
 
 class OnCallWidget extends StatefulWidget {
+  const OnCallWidget({super.key});
+
   @override
-  _OnCallWidgetState createState() => _OnCallWidgetState();
+  OnCallWidgetState createState() => OnCallWidgetState();
 }
 
-class _OnCallWidgetState extends State<OnCallWidget> {
+class OnCallWidgetState extends State<OnCallWidget> {
   bool isMuted = false,
       isIncomingCall = false,
       isOngoingCall = false;
@@ -46,24 +48,33 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     '*', '0', '#'
   ];
 
+  bool showAcceptButton = true;
+
   bool speakerMode = false;
 
   @override
   void initState() {
     super.initState();
-
+    getCallStatus();
     settingToNormalSpeaker();
   }
 
-  @override
-  void dispose(){
-    super.dispose();
-  }
-  bool showAcceptButton = true;
 
+
+  Future<void>getCallStatus()async{
+    final callStatus = await riseDatabase.getStatus('incoming');
+    if(callStatus == 1){
+      setState(() {
+        showAcceptButton = true;
+      });
+    }else{
+      showAcceptButton = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+
 
     final callProvider = Provider.of<CallProvider>(context);
     return Scaffold(
@@ -244,6 +255,10 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     });
   }
 
+  @override
+  void dispose(){
+    super.dispose();
+  }
 
 
 
