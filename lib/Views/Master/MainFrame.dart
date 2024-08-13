@@ -126,6 +126,7 @@ class MainFrameState extends State<MainFrame>{
           if(outgoing == 1){
             navigationProvider.showOnCallWidget();
           }
+          myAudio.stop();
         }else if(msg == "SipUnRegisteredEvent"){
           setState(() {
             showMessage = false;
@@ -648,54 +649,59 @@ class MainFrameState extends State<MainFrame>{
                     ),
                   ),
                 ),
-                BottomNavigationBar(
-                  backgroundColor: Colors.white,
-                  items: [
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.dialpad),
-                      label: 'Dialpad',
-                    ),
-                    // const BottomNavigationBarItem(
-                    //   icon: Icon(Icons.record_voice_over),
-                    //   label: 'Records',
-                    // ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.history),
-                      label: 'Call History',
-                    ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.message),
-                      label: 'Messages',
-                    ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.settings),
-                      label: 'Setting',
-                    ),
-                    if (navigationProvider.showOnCall)...[
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.call_made),
-                        label: 'OnCall',
-                      ),
-                    ],
-                    if (navigationProvider.showFireAlarm)...[
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.fireplace),
-                        label: 'Fire Alarm',
-                      ),
-                    ],
-
-                  ],
-                  currentIndex: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
-                  selectedItemColor: Colors.blue,
-                  unselectedItemColor: Colors.grey,
-                  onTap: (index) {
-                    debugPrint("index : ${navigationProvider.selectedIndex}");
-                    // if (!navigationProvider.showOnCall && index == 3) return;
-                    janusConnection == "unregistered" ? navigationProvider.setIndex(3) : navigationProvider.setIndex(index) ;
-                  },
-                ),
               ],
             )
+        ),
+        bottomNavigationBar: Container(
+          height: 50,
+          child: BottomNavigationBar(
+            backgroundColor: Colors.white,
+            selectedFontSize: 5,
+            iconSize: 25,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.dialpad),
+                label: 'Dialpad',
+              ),
+              // const BottomNavigationBarItem(
+              //   icon: Icon(Icons.record_voice_over),
+              //   label: 'Records',
+              // ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'Call History',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.message),
+                label: 'Messages',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: 'Setting',
+              ),
+              if (navigationProvider.showOnCall)...[
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.call_made),
+                  label: 'OnCall',
+                ),
+              ],
+              if (navigationProvider.showFireAlarm)...[
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.fireplace),
+                  label: 'Fire Alarm',
+                ),
+              ],
+
+            ],
+            currentIndex: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: Colors.grey,
+            onTap: (index) {
+              debugPrint("index : ${navigationProvider.selectedIndex}");
+              // if (!navigationProvider.showOnCall && index == 3) return;
+              janusConnection == "unregistered" ? navigationProvider.setIndex(3) : navigationProvider.setIndex(index) ;
+            },
+          ),
         ),
       ),
     );

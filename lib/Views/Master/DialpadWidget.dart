@@ -91,8 +91,8 @@ class _DialpadWidgetState extends State<DialpadWidget> {
   @override
   Widget build(BuildContext context) {
     final callProvider = Provider.of<CallProvider>(context, listen: false);
-    final width = MediaQuery.sizeOf(context).width;
-    final padding = (width * 0.6/ 3.5).ceil();
+    final width = MediaQuery.of(context).size.width;
+    final padding = (width * 0.4) / 2;
 
     // Calculate the width of the buttons including the spacing between them
     double buttonWidth = 56.0; // Width of FloatingActionButton by default

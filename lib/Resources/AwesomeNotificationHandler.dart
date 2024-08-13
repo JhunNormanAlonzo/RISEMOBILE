@@ -17,16 +17,13 @@ class AwesomeNotificationHandler {
       IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
     }
 
+
     if(receivedAction.buttonKeyPressed == 'ACCEPT'){
       debugPrint("Accept");
-      await myAudio.stop();
+      myAudio.stop();
       await backJanus.accept();
       await riseDatabase.setActive("accepted");
       // FlutterBackgroundService().invoke('accept');
-    }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
-      debugPrint("Declining");
-      await myAudio.stop();
-      await backJanus.decline();
     }
   }
 
@@ -42,6 +39,11 @@ class AwesomeNotificationHandler {
 
   // Optionally handle notification dismissed event
   static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
-    // Handle notification dismissed
+    if(receivedAction.buttonKeyPressed == 'DECLINE'){
+      var backJanus = BackJanusController();
+      debugPrint("Declining");
+      myAudio.stop();
+      await backJanus.decline();
+    }
   }
 }

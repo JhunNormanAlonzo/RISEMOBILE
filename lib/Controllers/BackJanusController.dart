@@ -101,15 +101,10 @@ class BackJanusController{
           storageController.storeData("callStatus", "incoming");
           await riseDatabase.setActive("incoming");
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
-
-
           debugPrint("Executing delayed WebRTC initialization and jsep handling");
 
           // rtc = even.jsep;
           debugPrint("sending set ready");
-
-
-
 
 
 
@@ -122,7 +117,10 @@ class BackJanusController{
                     title: "Call Notification",
                     body: 'Incoming call $caller!',
                     autoDismissible: false,
-                    duration: const Duration(seconds: 20)
+                    locked: true,
+                    category: NotificationCategory.Call,
+                    wakeUpScreen: true,
+                    fullScreenIntent: true,
                 ),
                 actionButtons: [
                   NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default),

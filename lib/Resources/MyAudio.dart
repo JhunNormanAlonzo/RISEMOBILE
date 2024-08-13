@@ -63,8 +63,8 @@ class MyAudio{
     await player.play();
   }
 
-  Future<void> stop() async{
-    await player.stop();
+  stop() async{
+    player.stop();
     isPlaying = false;
   }
 }

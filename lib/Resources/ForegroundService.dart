@@ -195,6 +195,7 @@ void onStart(ServiceInstance service) async {
     service.on('accept').listen((event) async {
       debugPrint("****************************Sending ACCEPT using background****************************************");
       await backJanus.accept();
+      await backJanus.enableSpeakerMode(false);
     });
 
     service.on('muteUnmute').listen((event) async {
