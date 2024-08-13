@@ -373,35 +373,35 @@ class MainFrameState extends State<MainFrame>{
                       return const CircularProgressIndicator();
                     },
                   ),
-                  // const SizedBox(height: 20),
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     Expanded(
-                  //       child: ElevatedButton.icon(
-                  //         onPressed: (){
-                  //           final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
-                  //           myAudio.stop();
-                  //           FlutterBackgroundService().invoke('stopVibration');
-                  //           navigationProvider.hideFireAlarmWidget();
-                  //         },
-                  //         style: ElevatedButton.styleFrom(
-                  //             backgroundColor: Pallete.backgroundColor
-                  //         ),
-                  //
-                  //         label: const Text(
-                  //           "Stop Alarm",
-                  //           style: TextStyle(
-                  //               color: Pallete.white,
-                  //               fontSize: 13,
-                  //               fontWeight: FontWeight.bold
-                  //           ),
-                  //         ),
-                  //         icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: (){
+                            final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
+                            myAudio.stop();
+                            FlutterBackgroundService().invoke('stopVibration');
+                            navigationProvider.hideFireAlarmWidget();
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Pallete.backgroundColor
+                          ),
+
+                          label: const Text(
+                            "Stop Alarm",
+                            style: TextStyle(
+                                color: Pallete.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                          icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
@@ -13,6 +14,15 @@ class AwesomeNotificationHandler {
     var backJanus = BackJanusController();
     final dynamic callStatus = await storageController.getData('callStatus');
     debugPrint("call status is : $callStatus");
+
+    try{
+      myAudio.stop();
+    }catch(e){
+      if (kDebugMode) {
+        print(e);
+      }
+    }
+
     if(callStatus == "incoming"){
       IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
     }
@@ -24,6 +34,12 @@ class AwesomeNotificationHandler {
       await backJanus.accept();
       await riseDatabase.setActive("accepted");
       // FlutterBackgroundService().invoke('accept');
+    }
+
+
+    if(receivedAction.buttonKeyPressed == 'STOP'){
+      debugPrint("Stopping fire alarm");
+      myAudio.stop();
     }
   }
 
