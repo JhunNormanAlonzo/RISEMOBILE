@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -20,17 +21,18 @@ import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:rise/Resources/Provider/NavigationProvider.dart';
 import 'package:rise/Views/Master/CallHistoryWidget.dart';
-import 'package:rise/Views/Master/DialpadWidget.dart';
 import 'package:rise/Views/Master/FireWidget.dart';
+import 'package:rise/Views/Master/DialpadWidget.dart';
 import 'package:rise/Views/Master/MessagesWidget.dart';
 import 'package:rise/Views/Master/OnCallWidget.dart';
 import 'package:rise/Views/Master/SipRegistration.dart';
+import 'package:rise/Views/Master/TestingWidget.dart';
 
 
 
 
 class MainFrame extends StatefulWidget {
-  const MainFrame({Key? key}) : super(key: key);
+  const MainFrame({super.key});
 
   @override
     MainFrameState createState() => MainFrameState();
@@ -259,160 +261,244 @@ class MainFrameState extends State<MainFrame>{
   Widget frame(BuildContext context){
     final navigationProvider = Provider.of<NavigationProvider>(context);
     final List<Widget> widgets = [
-      DialpadWidget(),
+      const DialpadWidget(),
+       // TestingWidget(),
       // const MessagesWidget(),
       const CallHistoryWidget(),
       const MessagesWidget(),
       const Settings(),
       if (navigationProvider.showOnCall)...[
-        OnCallWidget(),
+        const OnCallWidget(),
       ],
       if (navigationProvider.showFireAlarm)...[
         const FireWidget(),
       ]
     ];
-    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        // title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
-        title: Row(
-          children: [
-            const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
-            const SizedBox(width: 20),
-            FutureBuilder<dynamic>(
-              future: storageController.getData("mailboxNumber"),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return Row(
+    return WillPopScope(
+      onWillPop: () async {
+        bool shouldClose = await _showExitConfirmationDialog(context);
+        return shouldClose; // If true, the app will close; if false, it won't.
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          // title:  const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
+          title: Row(
+            children: [
+              const Text("RISE", style: TextStyle(color: Pallete.gradient4, fontWeight: FontWeight.bold),),
+              const SizedBox(width: 20),
+              FutureBuilder<dynamic>(
+                future: storageController.getData("mailboxNumber"),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Row(
+                      children: [
+                        Text(
+                          snapshot.data!,
+                          style:  const TextStyle(
+                              color: Pallete.gradient1,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18
+                          ),
+                        ),
+                      ],
+                    );
+
+                  } else if (snapshot.hasError) {
+                    return const Text('No Extension Detected');
+                  }
+                  return const CircularProgressIndicator();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            if(showSipStatus == true)...[
+              Row(
+                children: [
+                  const SizedBox(width: 20),
+                  showMessage ? SwingingIcon(showMessage: true) : const SizedBox.shrink(),
+
+                  Container(
+                    margin: const EdgeInsets.only(left: 10.0, right: 10.0),
+                    padding: const EdgeInsets.all(2.0), // Adjust the padding as needed
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Background color if needed
+                      border: Border.all(
+                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
+                        width: 2.0, // Border width
+                      ),
+                      borderRadius: BorderRadius.circular(8.0), // Border radius
+                    ),
+                    child: Text(
+                      janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
+                      style: TextStyle(
+                        color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ],
+        ),
+        drawer: Drawer(
+          backgroundColor: Pallete.gradient4,
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.only(left: 40.0, right: 40.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 15),
+                  Image.asset('assets/images/diavox.jpg'),
+                  const SizedBox(height: 40),
+                  FutureBuilder<dynamic>(
+                    future: storageController.getData("mailboxNumber"),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Text(
+                          snapshot.data!,
+                          style: const TextStyle(
+                              color: Pallete.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 50
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return const Text('No Extension Detected');
+                      }
+                      return const CircularProgressIndicator();
+                    },
+                  ),
+                  // const SizedBox(height: 20),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     Expanded(
+                  //       child: ElevatedButton.icon(
+                  //         onPressed: (){
+                  //           final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
+                  //           myAudio.stop();
+                  //           FlutterBackgroundService().invoke('stopVibration');
+                  //           navigationProvider.hideFireAlarmWidget();
+                  //         },
+                  //         style: ElevatedButton.styleFrom(
+                  //             backgroundColor: Pallete.backgroundColor
+                  //         ),
+                  //
+                  //         label: const Text(
+                  //           "Stop Alarm",
+                  //           style: TextStyle(
+                  //               color: Pallete.white,
+                  //               fontSize: 13,
+                  //               fontWeight: FontWeight.bold
+                  //           ),
+                  //         ),
+                  //         icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        snapshot.data!,
-                        style:  const TextStyle(
-                            color: Pallete.gradient1,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: (){
+                            if (janusConnection == "registered") {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    backgroundColor: Pallete.white.withOpacity(1),
+                                    title: const Text("Un-Register ?", style: TextStyle(
+                                        color: Pallete.gradient4,
+                                        fontWeight: FontWeight.bold
+                                    ),),
+                                    content: const Text('Are you sure you want to unregister to webrtc?',
+                                      style: TextStyle(
+                                          color: Pallete.backgroundColor,
+                                          fontWeight: FontWeight.bold
+                                      ),),
+                                    actions: <Widget>[
+                                      Center(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () async{
+                                                await storageController.storeData("janusConnection", "unregistered");
+                                                setState(() {
+                                                  janusConnection = "unregistered";
+                                                });
+                                                invoke('hangup');
+                                                FlutterBackgroundService().invoke('unRegister');
+                                                Navigator.of(context).pop();
+                                              },
+                                              style: ButtonStyle(
+                                                backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                              ),
+                                              child:  const Text('Proceed',
+                                                style: TextStyle(
+                                                  color: Pallete.white,
+                                                  fontWeight: FontWeight.w900,
+                                                ),),
+                                            ),
+                                            TextButton(
+                                              child: const Text('Close', style: TextStyle(
+                                                  color: Pallete.backgroundColor,
+                                                  fontWeight: FontWeight.bold
+                                              ),),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Pallete.backgroundColor
+                          ),
+
+                          label: const Text(
+                            "WebRTC Unregister",
+                            style: TextStyle(
+                                color: Pallete.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                          icon: const Icon(Icons.delete, color: Pallete.white),
                         ),
                       ),
                     ],
-                  );
-
-                } else if (snapshot.hasError) {
-                  return const Text('No Extension Detected');
-                }
-                return const CircularProgressIndicator();
-              },
-            ),
-          ],
-        ),
-        actions: [
-          if(showSipStatus == true)...[
-            Row(
-              children: [
-                const SizedBox(width: 20),
-                showMessage ? SwingingIcon(showMessage: true) : const SizedBox.shrink(),
-
-                Container(
-                  margin: const EdgeInsets.only(left: 10.0, right: 10.0),
-                  padding: const EdgeInsets.all(2.0), // Adjust the padding as needed
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Background color if needed
-                    border: Border.all(
-                      color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3, // Border color
-                      width: 2.0, // Border width
-                    ),
-                    borderRadius: BorderRadius.circular(8.0), // Border radius
                   ),
-                  child: Text(
-                    janusConnection == "registered" ? "REGISTERED" : "UNREGISTERED",
-                    style: TextStyle(
-                      color: janusConnection == "registered" ? Pallete.gradient1 : Pallete.gradient3,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ],
-      ),
-      drawer: Drawer(
-        backgroundColor: Pallete.gradient4,
-        child: SafeArea(
-          child: Container(
-            margin: const EdgeInsets.only(left: 40.0, right: 40.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 15),
-                Image.asset('assets/images/diavox.jpg'),
-                const SizedBox(height: 40),
-                FutureBuilder<dynamic>(
-                  future: storageController.getData("mailboxNumber"),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        snapshot.data!,
-                        style: const TextStyle(
-                            color: Pallete.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 50
-                        ),
-                      );
-                    } else if (snapshot.hasError) {
-                      return const Text('No Extension Detected');
-                    }
-                    return const CircularProgressIndicator();
-                  },
-                ),
-                // const SizedBox(height: 20),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.center,
-                //   children: [
-                //     Expanded(
-                //       child: ElevatedButton.icon(
-                //         onPressed: (){
-                //           final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
-                //           myAudio.stop();
-                //           FlutterBackgroundService().invoke('stopVibration');
-                //           navigationProvider.hideFireAlarmWidget();
-                //         },
-                //         style: ElevatedButton.styleFrom(
-                //             backgroundColor: Pallete.backgroundColor
-                //         ),
-                //
-                //         label: const Text(
-                //           "Stop Alarm",
-                //           style: TextStyle(
-                //               color: Pallete.white,
-                //               fontSize: 13,
-                //               fontWeight: FontWeight.bold
-                //           ),
-                //         ),
-                //         icon: const Icon(Icons.local_fire_department, color: Pallete.gradient3),
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: (){
-                          if (janusConnection == "registered") {
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async{
                             showDialog(
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
                                   backgroundColor: Pallete.white.withOpacity(1),
-                                  title: const Text("Un-Register ?", style: TextStyle(
+                                  title: const Text("Attention!", style: TextStyle(
                                       color: Pallete.gradient4,
                                       fontWeight: FontWeight.bold
                                   ),),
-                                  content: const Text('Are you sure you want to unregister to webrtc?',
+                                  content: const Text('You are required to scan QR code?',
                                     style: TextStyle(
                                         color: Pallete.backgroundColor,
                                         fontWeight: FontWeight.bold
@@ -424,18 +510,19 @@ class MainFrameState extends State<MainFrame>{
                                         children: [
                                           TextButton(
                                             onPressed: () async{
+                                              await storageController.removeData("gateway");
+                                              await storageController.removeData("base");
+                                              await storageController.removeData("appKey");
+                                              await storageController.removeData("androidHost");
+                                              await storageController.removeData("appId");
+                                              await storageController.removeData("accessToken");
                                               await storageController.storeData("janusConnection", "unregistered");
-                                              setState(() {
-                                                janusConnection = "unregistered";
-                                              });
-                                              invoke('hangup');
-                                              FlutterBackgroundService().invoke('unRegister');
-                                              Navigator.of(context).pop();
+                                              exit(0);
                                             },
                                             style: ButtonStyle(
                                               backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
                                             ),
-                                            child:  const Text('Proceed',
+                                            child:  const Text('Agree',
                                               style: TextStyle(
                                                 color: Pallete.white,
                                                 fontWeight: FontWeight.w900,
@@ -457,263 +544,162 @@ class MainFrameState extends State<MainFrame>{
                                 );
                               },
                             );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Pallete.backgroundColor
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Pallete.gradient5
+                          ),
+                          icon: const Icon(Icons.directions_boat, color: Pallete.gradient4),
+                          label: const Text(
+                            "Switch Ship",
+                            style: TextStyle(
+                                color: Pallete.backgroundColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
                         ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async{
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  backgroundColor: Pallete.white.withOpacity(1),
+                                  title: const Text("Diavox Rise", style: TextStyle(
+                                      color: Pallete.gradient4,
+                                      fontWeight: FontWeight.bold
+                                  ),),
+                                  content: const Text('Are you sure you want to shutdown the app?',
+                                    style: TextStyle(
+                                        color: Pallete.backgroundColor,
+                                        fontWeight: FontWeight.bold
+                                    ),),
+                                  actions: <Widget>[
+                                    Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () async{
+                                              await storageController.storeData("janusConnection", "unregistered");
+                                              SystemNavigator.pop();
+                                            },
+                                            style: ButtonStyle(
+                                              backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                                            ),
+                                            child:  const Text('Shutdown',
+                                              style: TextStyle(
+                                                color: Pallete.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),),
+                                          ),
+                                          TextButton(
+                                            child: const Text('Close', style: TextStyle(
+                                                color: Pallete.backgroundColor,
+                                                fontWeight: FontWeight.bold
+                                            ),),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3),
+                          label: const Text(
+                            "Disconnect",
+                            style: TextStyle(
+                                color: Pallete.backgroundColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
-                        label: const Text(
-                          "WebRTC Unregister",
-                          style: TextStyle(
-                              color: Pallete.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold
-                          ),
-                        ),
-                        icon: const Icon(Icons.delete, color: Pallete.white),
-                      ),
+          ),
+        ),
+        body:  SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: IndexedStack(
+                        index: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
+                        children: widgets
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async{
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                backgroundColor: Pallete.white.withOpacity(1),
-                                title: const Text("Attention!", style: TextStyle(
-                                    color: Pallete.gradient4,
-                                    fontWeight: FontWeight.bold
-                                ),),
-                                content: const Text('You are required to scan QR code?',
-                                  style: TextStyle(
-                                      color: Pallete.backgroundColor,
-                                      fontWeight: FontWeight.bold
-                                  ),),
-                                actions: <Widget>[
-                                  Center(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        TextButton(
-                                          onPressed: () async{
-                                            await storageController.removeData("gateway");
-                                            await storageController.removeData("base");
-                                            await storageController.removeData("appKey");
-                                            await storageController.removeData("androidHost");
-                                            await storageController.removeData("appId");
-                                            await storageController.removeData("accessToken");
-                                            await storageController.storeData("janusConnection", "unregistered");
-                                            exit(0);
-                                          },
-                                          style: ButtonStyle(
-                                            backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                          ),
-                                          child:  const Text('Agree',
-                                            style: TextStyle(
-                                              color: Pallete.white,
-                                              fontWeight: FontWeight.w900,
-                                            ),),
-                                        ),
-                                        TextButton(
-                                          child: const Text('Close', style: TextStyle(
-                                              color: Pallete.backgroundColor,
-                                              fontWeight: FontWeight.bold
-                                          ),),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Pallete.gradient5
-                        ),
-                        icon: const Icon(Icons.directions_boat, color: Pallete.gradient4),
-                        label: const Text(
-                          "Switch Ship",
-                          style: TextStyle(
-                              color: Pallete.backgroundColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold
-                          ),
-                        ),
+                BottomNavigationBar(
+                  backgroundColor: Colors.white,
+                  items: [
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.dialpad),
+                      label: 'Dialpad',
+                    ),
+                    // const BottomNavigationBarItem(
+                    //   icon: Icon(Icons.record_voice_over),
+                    //   label: 'Records',
+                    // ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.history),
+                      label: 'Call History',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.message),
+                      label: 'Messages',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.settings),
+                      label: 'Setting',
+                    ),
+                    if (navigationProvider.showOnCall)...[
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.call_made),
+                        label: 'OnCall',
                       ),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async{
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                backgroundColor: Pallete.white.withOpacity(1),
-                                title: const Text("Diavox Rise", style: TextStyle(
-                                    color: Pallete.gradient4,
-                                    fontWeight: FontWeight.bold
-                                ),),
-                                content: const Text('Are you sure you want to shutdown the app?',
-                                  style: TextStyle(
-                                      color: Pallete.backgroundColor,
-                                      fontWeight: FontWeight.bold
-                                  ),),
-                                actions: <Widget>[
-                                  Center(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        TextButton(
-                                          onPressed: () async{
-                                            await storageController.storeData("janusConnection", "unregistered");
-                                            exit(0);
-                                          },
-                                          style: ButtonStyle(
-                                            backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
-                                          ),
-                                          child:  const Text('Shutdown',
-                                            style: TextStyle(
-                                              color: Pallete.white,
-                                              fontWeight: FontWeight.w900,
-                                            ),),
-                                        ),
-                                        TextButton(
-                                          child: const Text('Close', style: TextStyle(
-                                              color: Pallete.backgroundColor,
-                                              fontWeight: FontWeight.bold
-                                          ),),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.power_settings_new_rounded, color: Pallete.gradient3),
-                        label: const Text(
-                          "Disconnect",
-                          style: TextStyle(
-                              color: Pallete.backgroundColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold
-                          ),
-                        ),
+                    ],
+                    if (navigationProvider.showFireAlarm)...[
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.fireplace),
+                        label: 'Fire Alarm',
                       ),
-                    )
+                    ],
+
                   ],
+                  currentIndex: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
+                  selectedItemColor: Colors.blue,
+                  unselectedItemColor: Colors.grey,
+                  onTap: (index) {
+                    debugPrint("index : ${navigationProvider.selectedIndex}");
+                    // if (!navigationProvider.showOnCall && index == 3) return;
+                    janusConnection == "unregistered" ? navigationProvider.setIndex(3) : navigationProvider.setIndex(index) ;
+                  },
                 ),
               ],
-            ),
-          ),
-
+            )
         ),
       ),
-      body:  SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: IndexedStack(
-                      index: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
-                      children: widgets
-                  ),
-                ),
-              ),
-              BottomNavigationBar(
-                backgroundColor: Colors.white,
-                items: [
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.dialpad),
-                    label: 'Dialpad',
-                  ),
-                  // const BottomNavigationBarItem(
-                  //   icon: Icon(Icons.record_voice_over),
-                  //   label: 'Records',
-                  // ),
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.history),
-                    label: 'Call History',
-                  ),
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.message),
-                    label: 'Messages',
-                  ),
-                  const BottomNavigationBarItem(
-                    icon: Icon(Icons.settings),
-                    label: 'Setting',
-                  ),
-                  if (navigationProvider.showOnCall)...[
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.call_made),
-                      label: 'OnCall',
-                    ),
-                  ],
-                  if (navigationProvider.showFireAlarm)...[
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.fireplace),
-                      label: 'Fire Alarm',
-                    ),
-                  ],
-
-                ],
-                currentIndex: janusConnection == "unregistered" ? 3 : navigationProvider.selectedIndex,
-                selectedItemColor: Colors.blue,
-                unselectedItemColor: Colors.grey,
-                onTap: (index) {
-                  debugPrint("index : ${navigationProvider.selectedIndex}");
-                  // if (!navigationProvider.showOnCall && index == 3) return;
-                  janusConnection == "unregistered" ? navigationProvider.setIndex(3) : navigationProvider.setIndex(index) ;
-                },
-              ),
-            ],
-          )
-      ),
     );
-    // return DefaultTabController(
-    //   length: 3, // Number of tabs
-    //   child: Scaffold(
-    //     appBar: AppBar(
-    //       title: Text('Top Navigation with Tabs'),
-    //       bottom: TabBar(
-    //         tabs: [
-    //           Tab(icon: Icon(Icons.home), text: 'Home'),
-    //           Tab(icon: Icon(Icons.search), text: 'Search'),
-    //           Tab(icon: Icon(Icons.account_circle), text: 'Profile'),
-    //         ],
-    //       ),
-    //     ),
-    //     body: TabBarView(
-    //       children: [
-    //         Center(child: Text('Home Page', style: TextStyle(color: Colors.white),)),
-    //         Center(child: Text('Search Page', style: TextStyle(color: Colors.white))),
-    //         Center(child: Text('Profile Page', style: TextStyle(color: Colors.white))),
-    //       ],
-    //     ),
-    //   ),
-    // );
+
   }
 
   Widget checkingSipRegistrationWidget(){
@@ -781,6 +767,68 @@ class MainFrameState extends State<MainFrame>{
     );
   }
 
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Pallete.white.withOpacity(1),
+          title: const Text(
+            "Diavox Rise",
+            style: TextStyle(
+              color: Pallete.gradient4,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to exit the app?',
+            style: TextStyle(
+              color: Pallete.backgroundColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: <Widget>[
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.of(context).pop(true);
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all<Color>(Pallete.gradient3),
+                    ),
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        color: Pallete.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Pallete.backgroundColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(false); // Return false to indicate the user doesn't want to exit
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false; // If the user dismisses the dialog, return false.
+  }
+
+
   @override
   void dispose() {
     IsolateNameServer.removePortNameMapping('mainIsolate');
@@ -838,7 +886,11 @@ class _SwingingIconState extends State<SwingingIcon> with SingleTickerProviderSt
     )
         : const SizedBox.shrink();
   }
+
+
 }
+
+
 
 
 

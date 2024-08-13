@@ -19,23 +19,14 @@ class AwesomeNotificationHandler {
 
     if(receivedAction.buttonKeyPressed == 'ACCEPT'){
       debugPrint("Accept");
-      myAudio.stop();
-      backJanus.accept();
+      await myAudio.stop();
+      await backJanus.accept();
       await riseDatabase.setActive("accepted");
       // FlutterBackgroundService().invoke('accept');
     }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
-      debugPrint("Decline");
-      final outgoing = await riseDatabase.getStatus("outgoing");
-      final incoming = await riseDatabase.getStatus("incoming");
-      if(outgoing == 1){
-        backJanus.hangup();
-      }
-
-      if(incoming == 1){
-        backJanus.decline();
-      }
-
-      myAudio.stop();
+      debugPrint("Declining");
+      await myAudio.stop();
+      await backJanus.decline();
     }
   }
 
