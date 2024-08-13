@@ -380,6 +380,7 @@ class MainFrameState extends State<MainFrame>{
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: (){
+                            AwesomeNotifications().cancel(1);
                             final navigationProvider = Provider.of<NavigationProvider>(context, listen: false);
                             myAudio.stop();
                             FlutterBackgroundService().invoke('stopVibration');

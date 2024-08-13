@@ -16,6 +16,7 @@ class AwesomeNotificationHandler {
     debugPrint("call status is : $callStatus");
 
     try{
+      AwesomeNotifications().cancel(1);
       myAudio.stop();
     }catch(e){
       if (kDebugMode) {
@@ -39,6 +40,7 @@ class AwesomeNotificationHandler {
 
     if(receivedAction.buttonKeyPressed == 'STOP'){
       debugPrint("Stopping fire alarm");
+      AwesomeNotifications().cancel(1);
       myAudio.stop();
     }
   }
