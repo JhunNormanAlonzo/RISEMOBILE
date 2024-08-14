@@ -10,6 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
@@ -65,11 +66,15 @@ void onStart(ServiceInstance service) async {
         backWebsocket.listen();
         messageWaitingSocket.listen();
 
-        await backJanus.initJanusClient();
+        final registrationStatus = await api.checkSipRegistration();
 
-        Future.delayed(const Duration(seconds: 5), () async{
-          backJanus.autoRegister();
-        });
+        if(registrationStatus == "unregistered"){
+          await backJanus.initJanusClient();
+
+          Future.delayed(const Duration(seconds: 5), () async{
+            backJanus.autoRegister();
+          });
+        }
       } else {
         AwesomeNotifications().cancel(3);
         await AwesomeNotifications().createNotification(

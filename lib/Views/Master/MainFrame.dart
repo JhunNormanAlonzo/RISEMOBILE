@@ -12,6 +12,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/StorageController.dart';
+import 'package:rise/Resources/Background/BatteryOptimizationHandler.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/ForegroundService.dart';
 import 'package:rise/Resources/Function.dart';
@@ -63,6 +64,13 @@ class MainFrameState extends State<MainFrame>{
     });
   }
 
+
+  Future<bool> _checkRegistrationStatus() async {
+    final status = await api.checkSipRegistration();
+    return status == "registered" ? true : false;
+  }
+
+
   @override
   void initState(){
 
@@ -76,6 +84,7 @@ class MainFrameState extends State<MainFrame>{
       final navigationProvider =  Provider.of<NavigationProvider>(context, listen: false);
       final callProvider = Provider.of<CallProvider>(context, listen: false);
       final callStatus = await storageController.getData("callStatus");
+
       if(callStatus == 'incoming'){
 
         setState(() {

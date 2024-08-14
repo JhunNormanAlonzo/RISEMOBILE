@@ -46,6 +46,7 @@ class ApiController{
 
   Future <String> checkSipRegistration() async{
     final mailboxNumber = await storageController.getData("mailboxNumber");
+    print("checking registration extension : $mailboxNumber");
     final base = await storageController.getData("base");
     final route = "$base/api/mobile/check-sip-registration/$mailboxNumber";
     final response = await http.get(Uri.parse(route), headers: await getHeaders());

@@ -7,6 +7,11 @@ import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
 import com.cloudwebrtc.webrtc.record.AudioTrackInterceptor;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.provider.Settings;
+import androidx.annotation.NonNull;
 
 
 public class MainActivity extends FlutterActivity {
@@ -48,6 +53,27 @@ public class MainActivity extends FlutterActivity {
                             }
                         }
                 );
+
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), "com.example.app/background_service")
+                .setMethodCallHandler(
+                        (call, result) -> {
+                            if (call.method.equals("requestIgnoreBatteryOptimizations")) {
+                                boolean isIgnoringBatteryOptimizations = requestIgnoreBatteryOptimizations();
+                                result.success(isIgnoringBatteryOptimizations);
+                            } else {
+                                result.notImplemented();
+                            }
+                        }
+                );
+    }
+
+
+
+    private boolean requestIgnoreBatteryOptimizations() {
+        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
+        startActivity(intent);
+        return true;
     }
 
     private void playRingtone() {
