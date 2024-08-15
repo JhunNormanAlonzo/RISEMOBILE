@@ -23,8 +23,8 @@ class AwesomeChannel {
 
   NotificationChannel callChannel = NotificationChannel(
     channelKey: 'call_channel',
-    channelName: 'Call Notification',
-    channelDescription: 'Notification for call',
+    channelName: 'Call Notifications',
+    channelDescription: 'Notification channel for incoming calls',
     importance: NotificationImportance.Max,
     playSound: true,
     enableVibration: true,

@@ -110,17 +110,18 @@ class BackJanusController{
 
           if(lifecycle == NotificationLifeCycle.Background){
             final caller = await storageController.getData("caller");
-            AwesomeNotifications().createNotification(
+            await AwesomeNotifications().createNotification(
                 content: NotificationContent(
-                    id: 2,
-                    channelKey: 'call_channel',
-                    title: "Call Notification",
-                    body: 'Incoming call $caller!',
-                    autoDismissible: false,
-                    locked: true,
-                    category: NotificationCategory.Call,
-                    wakeUpScreen: true,
-                    fullScreenIntent: true,
+                  id: 2,
+                  channelKey: 'call_channel',
+                  title: "Call Notification",
+                  body: 'Incoming call $caller',
+                  wakeUpScreen: true, // Optional: Wake up the screen
+                  fullScreenIntent: true, // Optional: Display full-screen intent
+                  autoDismissible: false, // Notification will not auto-dismiss
+                  notificationLayout: NotificationLayout.Default, // Adjust layout if needed
+                  displayOnForeground: true,
+                  displayOnBackground: true,
                 ),
                 actionButtons: [
                   NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default),
