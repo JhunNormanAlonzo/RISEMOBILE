@@ -17,6 +17,8 @@ class AwesomeChannel {
     ledColor: Pallete.gradient4,
     criticalAlerts: true,
     enableLights: true,
+    locked: true,
+    defaultPrivacy: NotificationPrivacy.Public,
     channelShowBadge: true,
   );
 
