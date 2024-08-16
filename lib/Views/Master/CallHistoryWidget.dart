@@ -28,8 +28,9 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
   @override
   void initState() {
     // TODO: implement initState
-    futureCallHistories = fetchCallHistories();
     super.initState();
+    futureCallHistories = fetchCallHistories();
+    print("test");
   }
 
   Future<List<CallHistory>> fetchCallHistories() async {
@@ -37,6 +38,14 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
     final callHistoryMaps = await riseDatabase.selectAllCallHistories();
     return callHistoryMaps.map((map) => CallHistory.fromMap(map)).toList();
   }
+
+
+  Future<void> refreshData() async {
+    setState(() {
+      futureCallHistories = fetchCallHistories();
+    });
+  }
+
 
   @override
   void dispose(){
@@ -52,21 +61,152 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(
-              child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Pallete.gradient3),)
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: Pallete.gradient3),
+            ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return  Center(
-              child: Text(
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                   'No call history found.',
                   style: TextStyle(
                     color: Pallete.white.withOpacity(0.7),
                     fontWeight: FontWeight.bold,
-                    fontSize: 20
-                  )
-              )
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: refreshData,
+                  child: const Text("Refresh"),
+                ),
+              ],
+            ),
           );
         } else {
-          return CallHistoryList(callHistories: snapshot.data!);
+          return Scaffold(
+            body: ListView.builder(
+              itemCount: snapshot.data?.length,
+              itemBuilder: (context, index) {
+                final call = snapshot.data![index];
+                return Dismissible(
+                  key: UniqueKey(),
+                  onDismissed: (direction) async {
+                    final mailboxNumber = await storageController.getData("mailboxNumber");
+                    final callHistoryId = call.id;
+                    debugPrint("Mailbox Number $mailboxNumber is deleting call history id : $callHistoryId");
+                    await riseDatabase.deleteHistory(callHistoryId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Pallete.backgroundColor.withOpacity(0.8),
+                          content: const Text(
+                            "Deleted successfully.",
+                            style: TextStyle(color: Pallete.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    }
+                    refreshData(); // Refresh the data after deletion
+                  },
+                  background: Container(
+                    color: Pallete.gradient4.withOpacity(0.4),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    alignment: AlignmentDirectional.center,
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Pallete.gradient4,
+                      child: Icon(
+                        call.direction == "outgoing" ? Icons.call_made : Icons.call_received,
+                        size: 24,
+                        color: Pallete.white,
+                      ),
+                    ),
+                    title: Text(
+                      call.extension,
+                      style: const TextStyle(color: Pallete.white),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${call.direction} • ${call.dateTime}',
+                          style: TextStyle(color: Pallete.white.withOpacity(0.6)),
+                        ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      onPressed: () async {
+                        Vibration.vibrate(duration: 100);
+                        final androidHost = await storageController.getData("androidHost");
+                        if (androidHost == null || androidHost.isEmpty) {
+                          await api.getAndroidHost();
+                        }
+                        await storageController.storeData("caller", call.extension);
+                        FlutterBackgroundService().invoke('makeCall', {
+                          'inputNumber': call.extension,
+                          'androidHost': androidHost,
+                        });
+                      },
+                      icon: const Icon(
+                        Icons.call,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () async {
+                bool? shouldClear = await showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Are you sure?'),
+                      content: const Text('The history will be deleted permanently.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(false); // Don't clear history
+                          },
+                          child: const Text('No'),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            await riseDatabase.clearHistory();
+                            debugPrint("History Cleared");
+                            setState(() {
+                              refreshData();
+                            });
+                            Navigator.of(context).pop(true); // Clear history
+                          },
+                          child: const Text('Yes'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (shouldClear == true) {
+                  refreshData(); // Refresh the data after clearing history
+                }
+              },
+              shape: const CircleBorder(),
+              backgroundColor: Pallete.white.withOpacity(0.8),
+              child: const Icon(Icons.delete, color: Pallete.gradient4),
+            ),
+          );
         }
       },
     );
@@ -75,130 +215,126 @@ class _CallHistoryWidgetState extends State<CallHistoryWidget> {
 
 
 
-class CallHistoryList extends StatefulWidget {
-  final List<CallHistory> callHistories;
-
-  const CallHistoryList({super.key, required this.callHistories});
-
-  @override
-  State<CallHistoryList> createState() => _CallHistoryListState();
-}
-
-class _CallHistoryListState extends State<CallHistoryList> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ListView.builder(
-        itemCount: widget.callHistories.length,
-        itemBuilder: (context, index) {
-          final call = widget.callHistories[index];
-          return  Dismissible(
-              key: UniqueKey(),
-              onDismissed: (direction)async{
-                final mailboxNumber = await storageController.getData("mailboxNumber");
-                final callHistoryId = call.id;
-                debugPrint("Mailbox Number $mailboxNumber is deleting call history id : $callHistoryId");
-                await riseDatabase.deleteHistory(callHistoryId);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: Pallete.backgroundColor.withOpacity(0.8),
-                      content: const Text(
-                        "Deleted successfully.",
-                        style: TextStyle(color: Pallete.white, fontSize: 20, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                }
-              },
-              background: Container(
-                color: Pallete.gradient4.withOpacity(0.4),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                alignment: AlignmentDirectional.center,
-                child: const Icon(
-                  Icons.delete,
-                  color: Colors.white,
-                ),
-              ),
-              child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Pallete.gradient4,
-                    child: Icon(call.direction == "outgoing" ? Icons.call_made : Icons.call_received,
-                      size: 24, // Sets the size of the icon
-                      color: Pallete.white, // Sets the color of the icon
-                    ),
-                  ),
-                  title: Text(call.extension, style: const TextStyle(color: Pallete.white),),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${call.direction} • ${call.dateTime}', style: TextStyle(color: Pallete.white.withOpacity(0.6)),),
-                    ],
-                  ),
-                  trailing: IconButton(
-                    onPressed: () async{
-                      Vibration.vibrate(duration: 100);
-                      final androidHost = await storageController.getData("androidHost");
-                      if (androidHost == null && androidHost.isEmpty) {
-                        await api.getAndroidHost();
-                      }
-
-                      // janus.makeCall(inputNumber, androidHost);
-                      await storageController.storeData("caller", call.extension);
-                      FlutterBackgroundService().invoke('makeCall',{
-                        'inputNumber' : call.extension,
-                        'androidHost' : androidHost,
-                      });
-                    },
-                    icon:  const Icon(
-                      Icons.call,
-                      color: Colors.blue,
-                    ),
-                  )
-              )
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async{
-          return await showDialog(
-              context: context,
-              builder: (BuildContext context){
-                return AlertDialog(
-                  title: const Text('Are you sure?'),
-                  content:  const Text('The history will be deleted permanently.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(false); // Don't exit app
-                      },
-                      child: const Text('No'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        await riseDatabase.clearHistory();
-                        debugPrint("History Cleared");
-                        if(mounted){
-                          Navigator.of(context).pop(false);
-                          Provider.of<NavigationProvider>(context, listen: false).setIndex(1);
-                        }
-                      },
-                      child: const Text('Yes'),
-                    ),
-                  ],
-                );
-              }
-          );
-
-        },
-        shape: const CircleBorder(),
-        backgroundColor: Pallete.white.withOpacity(0.8),
-        child: const Icon(Icons.delete, color: Pallete.gradient4),
-      ),
-    );
-  }
-}
+// class CallHistoryList extends StatefulWidget {
+//   final List<CallHistory> callHistories;
+//
+//   const CallHistoryList({super.key, required this.callHistories});
+//
+//   @override
+//   State<CallHistoryList> createState() => _CallHistoryListState();
+// }
+//
+// class _CallHistoryListState extends State<CallHistoryList> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: ListView.builder(
+//         itemCount: widget.callHistories.length,
+//         itemBuilder: (context, index) {
+//           final call = widget.callHistories[index];
+//           return  Dismissible(
+//               key: UniqueKey(),
+//               onDismissed: (direction)async{
+//                 final mailboxNumber = await storageController.getData("mailboxNumber");
+//                 final callHistoryId = call.id;
+//                 debugPrint("Mailbox Number $mailboxNumber is deleting call history id : $callHistoryId");
+//                 await riseDatabase.deleteHistory(callHistoryId);
+//                 if (mounted) {
+//                   ScaffoldMessenger.of(context).showSnackBar(
+//                     SnackBar(
+//                       backgroundColor: Pallete.backgroundColor.withOpacity(0.8),
+//                       content: const Text(
+//                         "Deleted successfully.",
+//                         style: TextStyle(color: Pallete.white, fontSize: 20, fontWeight: FontWeight.bold),
+//                         textAlign: TextAlign.center,
+//                       ),
+//                     ),
+//                   );
+//                 }
+//               },
+//               background: Container(
+//                 color: Pallete.gradient4.withOpacity(0.4),
+//                 padding: const EdgeInsets.symmetric(horizontal: 20),
+//                 alignment: AlignmentDirectional.center,
+//                 child: const Icon(
+//                   Icons.delete,
+//                   color: Colors.white,
+//                 ),
+//               ),
+//               child: ListTile(
+//                   leading: CircleAvatar(
+//                     backgroundColor: Pallete.gradient4,
+//                     child: Icon(call.direction == "outgoing" ? Icons.call_made : Icons.call_received,
+//                       size: 24, // Sets the size of the icon
+//                       color: Pallete.white, // Sets the color of the icon
+//                     ),
+//                   ),
+//                   title: Text(call.extension, style: const TextStyle(color: Pallete.white),),
+//                   subtitle: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text('${call.direction} • ${call.dateTime}', style: TextStyle(color: Pallete.white.withOpacity(0.6)),),
+//                     ],
+//                   ),
+//                   trailing: IconButton(
+//                     onPressed: () async{
+//                       Vibration.vibrate(duration: 100);
+//                       final androidHost = await storageController.getData("androidHost");
+//                       if (androidHost == null && androidHost.isEmpty) {
+//                         await api.getAndroidHost();
+//                       }
+//
+//                       // janus.makeCall(inputNumber, androidHost);
+//                       await storageController.storeData("caller", call.extension);
+//                       FlutterBackgroundService().invoke('makeCall',{
+//                         'inputNumber' : call.extension,
+//                         'androidHost' : androidHost,
+//                       });
+//                     },
+//                     icon:  const Icon(
+//                       Icons.call,
+//                       color: Colors.blue,
+//                     ),
+//                   )
+//               )
+//           );
+//         },
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         onPressed: () async{
+//           return await showDialog(
+//               context: context,
+//               builder: (BuildContext context){
+//                 return AlertDialog(
+//                   title: const Text('Are you sure?'),
+//                   content:  const Text('The history will be deleted permanently.'),
+//                   actions: [
+//                     TextButton(
+//                       onPressed: () {
+//                         Navigator.of(context).pop(false); // Don't exit app
+//                       },
+//                       child: const Text('No'),
+//                     ),
+//                     TextButton(
+//                       onPressed: () async {
+//                         await riseDatabase.clearHistory();
+//                         debugPrint("History Cleared");
+//                       },
+//                       child: const Text('Yes'),
+//                     ),
+//                   ],
+//                 );
+//               }
+//           );
+//
+//         },
+//         shape: const CircleBorder(),
+//         backgroundColor: Pallete.white.withOpacity(0.8),
+//         child: const Icon(Icons.delete, color: Pallete.gradient4),
+//       ),
+//     );
+//   }
+// }
 
 
 class CallHistory {

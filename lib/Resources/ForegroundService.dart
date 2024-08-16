@@ -10,6 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:provider/provider.dart';
 import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
@@ -19,6 +20,7 @@ import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
 import 'package:rise/Resources/Janus/janus_client.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyVibration.dart';
+import 'package:rise/Resources/Provider/JanusProvider.dart';
 
 SendPort? sendPortToMainFrame;
 Future<void> initializeService() async {
@@ -61,20 +63,23 @@ void onStart(ServiceInstance service) async {
       debugPrint("connectivity event : ${event.toString()}");
 
       if (event.toString() == "[ConnectivityResult.wifi]") {
+        await api.syncSipRegistration();
+        final registrationStatus = await api.checkSipRegistration();
+        debugPrint("registration status wifi : $registrationStatus");
+
         debugPrint("connectivity is wifi");
 
         backWebsocket.listen();
         messageWaitingSocket.listen();
 
-        final registrationStatus = await api.checkSipRegistration();
 
-        if(registrationStatus == "unregistered"){
-          await backJanus.initJanusClient();
 
-          Future.delayed(const Duration(seconds: 5), () async{
-            backJanus.autoRegister();
-          });
-        }
+        await backJanus.initJanusClient();
+
+        Future.delayed(const Duration(seconds: 5), () async{
+          await backJanus.unRegister();
+          await backJanus.autoRegister();
+        });
       } else {
         AwesomeNotifications().cancel(3);
         await AwesomeNotifications().createNotification(
@@ -86,6 +91,7 @@ void onStart(ServiceInstance service) async {
               duration: const Duration(seconds: 10)
           ),
         );
+        IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipUnRegisteredEvent");
         debugPrint("Not connected to WiFi");
       }
     });
@@ -96,7 +102,6 @@ void onStart(ServiceInstance service) async {
     service.on('websocketDisconnect').listen((event) {
       backWebsocket.disconnect();
     });
-
 
 
 

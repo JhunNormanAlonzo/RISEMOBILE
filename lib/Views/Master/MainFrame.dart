@@ -140,6 +140,9 @@ class MainFrameState extends State<MainFrame>{
           setState(() {
             showMessage = false;
           });
+          setState(() {
+            janusConnection = "unregistered";
+          });
         }else if(msg == "SipIncomingCallEvent"){
           callProvider.setIn();
           navigationProvider.showOnCallWidget();
@@ -199,6 +202,9 @@ class MainFrameState extends State<MainFrame>{
         navigationProvider.showOnCallWidget();
       }
     });
+
+
+
     Future.delayed(const Duration(seconds: 5), () async{
       debugPrint("auto registering on init state");
 

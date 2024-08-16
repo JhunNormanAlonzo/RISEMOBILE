@@ -106,6 +106,7 @@ flutter:
   assets:
      - assets/
      - assets/images/
+     - assets/images/fire1.png
      - assets/sounds/
 
   #   - images/a_dot_ham.jpeg

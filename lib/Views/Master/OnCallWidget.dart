@@ -57,7 +57,6 @@ class OnCallWidgetState extends State<OnCallWidget> {
   void initState() {
     super.initState();
     getCallStatus();
-    settingToNormalSpeaker();
   }
 
 
@@ -75,8 +74,6 @@ class OnCallWidgetState extends State<OnCallWidget> {
 
   @override
   Widget build(BuildContext context) {
-
-
     final callProvider = Provider.of<CallProvider>(context);
     return Scaffold(
       body: Column(
