@@ -62,14 +62,21 @@ class BackgroundWebsocket {
             debugPrint("Mailbox Number : $mailboxNumber is equal to $extension");
             if(lifecycle == NotificationLifeCycle.Background){
               await AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 1,
-                    channelKey: 'fire_channel',
-                    title: "Fire Notification",
-                    body: 'Fire alarm on $extension!',
-                    autoDismissible: false,
-                    duration: const Duration(seconds: 20)
-                ),
+                  content: NotificationContent(
+                      id: 1,
+                      channelKey: 'fire_channel',
+                      title: "Fire Notification",
+                      body: 'Fire alarm on $extension!',
+                      wakeUpScreen: true, // Optional: Wake up the screen
+                      fullScreenIntent: true, // Optional: Display full-screen intent
+                      autoDismissible: false, // Notification will not auto-dismiss
+                      notificationLayout: NotificationLayout.Default, // Adjust layout if needed
+                      displayOnForeground: true,
+                      displayOnBackground: true,
+                  ),
+                  actionButtons: [
+                    NotificationActionButton(key: 'STOP', label: 'Stop', actionType: ActionType.Default),
+                  ]
               );
             }else if(lifecycle == NotificationLifeCycle.Foreground){
               IsolateNameServer.lookupPortByName('mainIsolate')?.send('FireAlarmEvent-$extension');
@@ -92,6 +99,7 @@ class BackgroundWebsocket {
   disconnect(){
     channel!.sink.close();
   }
+
 
 
 

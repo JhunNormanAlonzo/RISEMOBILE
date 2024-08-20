@@ -1,26 +1,22 @@
-
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
+import 'package:rise/Components/DialButton.dart';
 import 'package:rise/Components/InputField.dart';
 import 'package:rise/Controllers/ApiController.dart';
-import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
-import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:rise/Resources/Pallete.dart';
+import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:vibration/vibration.dart';
 
-
-
 class DialpadWidget extends StatefulWidget {
+  const DialpadWidget({super.key});
+
   @override
   _DialpadWidgetState createState() => _DialpadWidgetState();
 }
 
 class _DialpadWidgetState extends State<DialpadWidget> {
-
   final List<String> dialPadNumbers = [
     '1', '2', '3',
     '4', '5', '6',
@@ -92,85 +88,89 @@ class _DialpadWidgetState extends State<DialpadWidget> {
     debugPrint("input value : $inputNumber");
     debugPrint("controller value : ${_controller.text}");
   }
-
   @override
   Widget build(BuildContext context) {
     final callProvider = Provider.of<CallProvider>(context, listen: false);
+    final width = MediaQuery.of(context).size.width;
+    final padding = (width * 0.4) / 2;
+
+    // Calculate the width of the buttons including the spacing between them
+    double buttonWidth = 56.0; // Width of FloatingActionButton by default
+    double spacing = 16.0; // Spacing between buttons
+    double totalWidth = (buttonWidth * 3) + (spacing * 2); // 3 buttons, 2 spaces
+
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none, // Allows overflow of the floating buttons
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20),
-              child: InputField(
-                placeholder: '',
+          Column(
+            children: [
+              InputField(
+                placeholder: "",
                 controller: _controller,
                 showBorder: false,
-                fontSize: 35,
+                fontSize: 20,
                 isEnabled: false,
               ),
-            ),
-          ),
-          Expanded(
-            flex: 2, // Adjust the flex value as needed
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 60),
-              child: GridView.builder(
-                itemCount: dialPadNumbers.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 1,
+              Expanded(
+                child: Center(
+                  child: FractionallySizedBox(
+                    widthFactor: 1, // Adjust as needed
+                    heightFactor: 1, // Adjust as needed
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: padding.toDouble()),
+                      child: GridView.builder(
+                        itemCount: dialPadNumbers.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10.0,
+                          mainAxisSpacing: 10.0,
+                          childAspectRatio: 1,
+                        ),
+                        itemBuilder: (context, index) {
+                          String number = dialPadNumbers[index];
+                          return DialButton(
+                            number: number,
+                            onPressed: () => _onButtonPressed(number),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                 ),
-                itemBuilder: (context, index) {
-                  String number = dialPadNumbers[index];
-                  return DialButton(
-                    number: number,
-                    onPressed: () => _onButtonPressed(number),
-                  );
-                },
               ),
-            ),
+            ],
           ),
-          Container(
-            decoration: const BoxDecoration(
-                border: Border(
-                    top: BorderSide(
-                        color: Colors.white24,
-                        width: 1.0
-                    )
-                )
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, top: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  FloatingActionButton(
-                    onPressed: (){
-                      callProvider.setOut();
-                      _onDialPressed();
-                    },
-                    backgroundColor: Colors.green,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.phone, color: Pallete.white),
-                  ),
-                  FloatingActionButton(
-                    onPressed: _onClearPressed,
-                    backgroundColor: Pallete.gradient3,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.delete, color: Pallete.white),
-                  ),
-                  FloatingActionButton(
-                    onPressed: _onBackspacePressed,
-                    backgroundColor: Colors.red,
-                    shape: const CircleBorder(),
-                    child: const Icon(Icons.backspace, color: Pallete.white),
-                  ),
-                ],
-              ),
+          Positioned(
+            bottom: 10.0, // Adjust to control how much the buttons overlap
+            left: (MediaQuery.of(context).size.width - totalWidth) / 2, // Center the row of buttons
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    callProvider.setOut();
+                    _onDialPressed();
+                  },
+                  backgroundColor: Colors.green,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.phone, color: Colors.white),
+                ),
+                SizedBox(width: spacing),
+                FloatingActionButton(
+                  onPressed: _onClearPressed,
+                  backgroundColor: Pallete.gradient3,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                SizedBox(width: spacing),
+                FloatingActionButton(
+                  onPressed: _onBackspacePressed,
+                  backgroundColor: Colors.red,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.backspace, color: Colors.white),
+                ),
+              ],
             ),
           ),
         ],
@@ -179,31 +179,4 @@ class _DialpadWidgetState extends State<DialpadWidget> {
   }
 }
 
-class DialButton extends StatelessWidget {
-  final String number;
-  final VoidCallback onPressed;
 
-  const DialButton({super.key, required this.number, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[800],
-        ),
-        child: Center(
-          child: Text(
-            number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24.0,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

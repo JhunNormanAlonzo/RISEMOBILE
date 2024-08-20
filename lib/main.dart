@@ -3,14 +3,13 @@ import 'dart:async';
 import 'dart:io';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:rise/Controllers/CoreController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
+import 'package:rise/Resources/Background/BatteryOptimizationHandler.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
@@ -28,8 +27,13 @@ Future<void> main() async {
   final appKey = await storageController.getData("appKey");
 
   await riseDatabase.database;
-
-
+  await coreController.requestPermission(Permission.notification);
+  await coreController.requestPermission(Permission.storage);
+  await coreController.requestPermission(Permission.camera);
+  await coreController.requestPermission(Permission.audio);
+  await coreController.requestPermission(Permission.storage);
+  await coreController.requestPermission(Permission.microphone);
+  await BatteryOptimizationHandler.requestPermissions();
 
   List<NotificationChannel> channels = [awesomeChannel.fireChannel, awesomeChannel.callChannel, awesomeChannel.connectionChannel];
   AwesomeNotifications().initialize(null, channels, debug: true);
@@ -40,13 +44,6 @@ Future<void> main() async {
     onNotificationDisplayedMethod: AwesomeNotificationHandler.onNotificationDisplayedMethod,
     onDismissActionReceivedMethod: AwesomeNotificationHandler.onDismissActionReceivedMethod,
   );
-
-  await coreController.requestPermission(Permission.camera);
-  await coreController.requestPermission(Permission.audio);
-  await coreController.requestPermission(Permission.storage);
-  await coreController.requestPermission(Permission.microphone);
-  await coreController.requestPermission(Permission.notification);
-  await coreController.requestPermission(Permission.criticalAlerts);
 
 
   storageController.storeData("janusConnection", "unregistered");
@@ -66,11 +63,16 @@ Future<void> main() async {
 
 
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final bool isQRScanned;
 
   const MyApp({super.key, required this.isQRScanned});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +82,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.light().copyWith(
           scaffoldBackgroundColor: Pallete.backgroundColor
       ),
-      home: isQRScanned ? const Login() : const QRPage(),
+      home: widget.isQRScanned ? const Login() : const QRPage(),
       // home: const TestingWidget()
     );
   }

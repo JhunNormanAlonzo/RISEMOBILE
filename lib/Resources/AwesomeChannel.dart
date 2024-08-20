@@ -17,14 +17,16 @@ class AwesomeChannel {
     ledColor: Pallete.gradient4,
     criticalAlerts: true,
     enableLights: true,
+    locked: true,
+    defaultPrivacy: NotificationPrivacy.Public,
     channelShowBadge: true,
   );
 
 
   NotificationChannel callChannel = NotificationChannel(
     channelKey: 'call_channel',
-    channelName: 'Call Notification',
-    channelDescription: 'Notification for call',
+    channelName: 'Call Notifications',
+    channelDescription: 'Notification channel for incoming calls',
     importance: NotificationImportance.Max,
     playSound: true,
     enableVibration: true,
@@ -33,6 +35,8 @@ class AwesomeChannel {
     ledColor: Pallete.gradient4,
     criticalAlerts: true,
     enableLights: true,
+    locked: true,
+    defaultPrivacy: NotificationPrivacy.Public,
     channelShowBadge: true,
   );
 

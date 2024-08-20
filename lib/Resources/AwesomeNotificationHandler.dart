@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
@@ -10,32 +11,38 @@ import 'package:rise/Resources/MyAudio.dart';
 
 class AwesomeNotificationHandler {
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
+    var backJanus = BackJanusController();
     final dynamic callStatus = await storageController.getData('callStatus');
     debugPrint("call status is : $callStatus");
+
+    try{
+      AwesomeNotifications().cancel(1);
+      myAudio.stop();
+    }catch(e){
+      if (kDebugMode) {
+        print(e);
+      }
+    }
+
     if(callStatus == "incoming"){
       IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
     }
 
-    // if(receivedAction.buttonKeyPressed == 'ACCEPT'){
-    //   debugPrint("Accept");
-    //   myAudio.stop();
-    //   backJanus.accept();
-    //   await riseDatabase.setAccepted(1);
-    //   // FlutterBackgroundService().invoke('accept');
-    // }else if(receivedAction.buttonKeyPressed == 'DECLINE'){
-    //   debugPrint("Decline");
-    //   final outgoing = await riseDatabase.getStatus("outgoing");
-    //   final incoming = await riseDatabase.getStatus("incoming");
-    //   if(outgoing == 1){
-    //     backJanus.hangup();
-    //   }
-    //
-    //   if(incoming == 1){
-    //     backJanus.decline();
-    //   }
-    //
-    //   myAudio.stop();
-    // }
+
+    if(receivedAction.buttonKeyPressed == 'ACCEPT'){
+      debugPrint("Accept");
+      myAudio.stop();
+      await backJanus.accept();
+      await riseDatabase.setActive("accepted");
+      // FlutterBackgroundService().invoke('accept');
+    }
+
+
+    if(receivedAction.buttonKeyPressed == 'STOP'){
+      debugPrint("Stopping fire alarm");
+      AwesomeNotifications().cancel(1);
+      myAudio.stop();
+    }
   }
 
   // Optionally handle notification created event
@@ -50,6 +57,11 @@ class AwesomeNotificationHandler {
 
   // Optionally handle notification dismissed event
   static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
-    // Handle notification dismissed
+    if(receivedAction.buttonKeyPressed == 'DECLINE'){
+      var backJanus = BackJanusController();
+      debugPrint("Declining");
+      myAudio.stop();
+      await backJanus.decline();
+    }
   }
 }

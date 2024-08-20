@@ -13,21 +13,25 @@ import 'package:flutter_foreground_service/flutter_foreground_service.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:rise/Components/DialButton.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/DatabaseConnection.dart';
+import 'package:rise/Resources/Function.dart';
 import 'package:rise/Resources/MyAudio.dart';
 import 'package:rise/Resources/Pallete.dart';
 import 'package:rise/Resources/Provider/CallProvider.dart';
 import 'package:rise/Resources/Provider/NavigationProvider.dart';
-import 'package:rise/Views/Master/DialpadWidget.dart';
+import 'package:rise/Views/Master/TestingWidget.dart';
 
 
 class OnCallWidget extends StatefulWidget {
+  const OnCallWidget({super.key});
+
   @override
-  _OnCallWidgetState createState() => _OnCallWidgetState();
+  OnCallWidgetState createState() => OnCallWidgetState();
 }
 
-class _OnCallWidgetState extends State<OnCallWidget> {
+class OnCallWidgetState extends State<OnCallWidget> {
   bool isMuted = false,
       isIncomingCall = false,
       isOngoingCall = false;
@@ -45,24 +49,31 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     '*', '0', '#'
   ];
 
+  bool showAcceptButton = true;
+
   bool speakerMode = false;
 
   @override
   void initState() {
     super.initState();
-    settingToNormalSpeaker();
+    getCallStatus();
   }
 
-  @override
-  void dispose(){
-    super.dispose();
-  }
-  bool showAcceptButton = true;
 
+
+  Future<void>getCallStatus()async{
+    final callStatus = await riseDatabase.getStatus('incoming');
+    if(callStatus == 1){
+      setState(() {
+        showAcceptButton = true;
+      });
+    }else{
+      showAcceptButton = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-
     final callProvider = Provider.of<CallProvider>(context);
     return Scaffold(
       body: Column(
@@ -242,6 +253,10 @@ class _OnCallWidgetState extends State<OnCallWidget> {
     });
   }
 
+  @override
+  void dispose(){
+    super.dispose();
+  }
 
 
 

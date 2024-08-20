@@ -7,15 +7,21 @@ import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:provider/provider.dart';
+import 'package:rise/Controllers/ApiController.dart';
 import 'package:rise/Controllers/BackJanusController.dart';
 import 'package:rise/Resources/AwesomeChannel.dart';
 import 'package:rise/Resources/AwesomeNotificationHandler.dart';
+import 'package:rise/Resources/Background/BackgroundMessageWaiting.dart';
 import 'package:rise/Resources/Background/BackgroundWebsocket.dart';
 import 'package:rise/Resources/Janus/janus_client.dart';
 import 'package:rise/Resources/MyHttpOverrides.dart';
 import 'package:rise/Resources/MyVibration.dart';
+import 'package:rise/Resources/Provider/JanusProvider.dart';
 
 SendPort? sendPortToMainFrame;
 Future<void> initializeService() async {
@@ -36,6 +42,7 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   HttpOverrides.global = MyHttpOverrides();
   var backWebsocket = BackgroundWebsocket();
+  var messageWaitingSocket = BackgroundMessageWaiting();
   if (service is AndroidServiceInstance) {
 
     var backJanus = BackJanusController();
@@ -57,14 +64,25 @@ void onStart(ServiceInstance service) async {
       debugPrint("connectivity event : ${event.toString()}");
 
       if (event.toString() == "[ConnectivityResult.wifi]") {
+        await api.syncSipRegistration();
+        final registrationStatus = await api.checkSipRegistration();
+        debugPrint("registration status wifi : $registrationStatus");
+
         debugPrint("connectivity is wifi");
 
         backWebsocket.listen();
+        messageWaitingSocket.listen();
+
+
+
 
         await backJanus.initJanusClient();
 
+        if(registrationStatus == "registered"){
+          await backJanus.unRegister();
+        }
         Future.delayed(const Duration(seconds: 5), () async{
-          backJanus.autoRegister();
+          await backJanus.autoRegister();
         });
       } else {
         AwesomeNotifications().cancel(3);
@@ -77,6 +95,10 @@ void onStart(ServiceInstance service) async {
               duration: const Duration(seconds: 10)
           ),
         );
+        Future.delayed(const Duration(seconds: 5), () async{
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipUnRegisteredEvent");
+        });
+
         debugPrint("Not connected to WiFi");
       }
     });
@@ -90,11 +112,28 @@ void onStart(ServiceInstance service) async {
 
 
 
+    service.on('disconnectJanus').listen((event) {
+      backJanus.disconnectJanusClient();
+    });
+
 
 
     service.on('testerMethod').listen((event) {
-      backJanus.testerMethod();
+
     });
+
+
+    service.on('initializeWebRTCStack').listen((event) async{
+      await backJanus.sip?.initializeWebRTCStack();
+    });
+
+
+    service.on('handleRemoteJsep').listen((event) async{
+      RTCSessionDescription? remoteOffer = event?['remoteOffer'];
+      await backJanus.sip?.handleRemoteJsep(remoteOffer);
+    });
+
+
 
 
 
@@ -173,6 +212,7 @@ void onStart(ServiceInstance service) async {
     service.on('accept').listen((event) async {
       debugPrint("****************************Sending ACCEPT using background****************************************");
       await backJanus.accept();
+      await backJanus.enableSpeakerMode(false);
     });
 
     service.on('muteUnmute').listen((event) async {

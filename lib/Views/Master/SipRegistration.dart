@@ -1,5 +1,8 @@
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_foreground_service/flutter_foreground_service.dart';
@@ -11,6 +14,7 @@ import 'package:rise/Controllers/JanusController.dart';
 import 'package:rise/Controllers/StorageController.dart';
 import 'package:rise/Resources/MyToast.dart';
 import 'package:rise/Resources/Pallete.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 
 
@@ -23,6 +27,7 @@ class Settings extends StatefulWidget {
 
 class SettingState extends State<Settings> {
 
+
   final TextEditingController _mailbox = TextEditingController();
   final TextEditingController _password = TextEditingController();
   bool showSidebar = true;
@@ -32,8 +37,10 @@ class SettingState extends State<Settings> {
     super.initState();
   }
 
+
+
   @override
-  void dispose(){
+  void dispose() {
     super.dispose();
   }
 
@@ -104,5 +111,7 @@ class SettingState extends State<Settings> {
       ),
     );
   }
+
+
 
 }

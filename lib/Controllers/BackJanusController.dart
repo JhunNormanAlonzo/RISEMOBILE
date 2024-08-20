@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:audio_session/audio_session.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:lecle_volume_flutter/lecle_volume_flutter.dart';
@@ -56,7 +58,8 @@ class BackJanusController{
 
 
   localStreamInitializer() async{
-     mediaStream =  await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
+     MediaStream? temp = await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
+     mediaStream = temp;
   }
 
 
@@ -83,46 +86,47 @@ class BackJanusController{
       sip = await session!.attach<JanusSipPlugin>();
       sip?.typedMessages?.listen((even) async {
         Object data = even.event.plugindata?.data;
-
+        print("EVENT TRIGGERED : $data");
         if (data is SipIncomingCallEvent) {
           debugPrint("--------------------------------------INCOMING CALL ALERT EVENT----------------------------------------------");
           String callerString = data.result?.username as String;
           RegExp regex = RegExp(r":(.+)@");
           Match match = regex.firstMatch(callerString) as Match;
           String number = match.group(1)!;
-
+          await sip?.initializeWebRTCStack();
+          rtc = even.jsep;
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipIncomingCallEvent");
           await storageController.storeData("caller", number);
           await riseDatabase.insertHistory(number, "incoming");
           storageController.storeData("callStatus", "incoming");
           await riseDatabase.setActive("incoming");
           final lifecycle = await AwesomeNotifications().getAppLifeCycle();
-
-
-
-          IsolateNameServer.lookupPortByName('backIsolate')?.send('SipIncomingCallEvent');
-
           debugPrint("Executing delayed WebRTC initialization and jsep handling");
 
-          rtc = even.jsep;
+          // rtc = even.jsep;
           debugPrint("sending set ready");
 
-          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipIncomingCallEvent');
+
 
           if(lifecycle == NotificationLifeCycle.Background){
             final caller = await storageController.getData("caller");
-            AwesomeNotifications().createNotification(
+            await AwesomeNotifications().createNotification(
                 content: NotificationContent(
-                    id: 2,
-                    channelKey: 'call_channel',
-                    title: "Call Notification",
-                    body: 'Incoming call $caller!',
-                    autoDismissible: false,
-                    duration: const Duration(seconds: 20)
+                  id: 2,
+                  channelKey: 'call_channel',
+                  title: "Call Notification",
+                  body: 'Incoming call $caller',
+                  wakeUpScreen: true, // Optional: Wake up the screen
+                  fullScreenIntent: true, // Optional: Display full-screen intent
+                  autoDismissible: false, // Notification will not auto-dismiss
+                  notificationLayout: NotificationLayout.Default, // Adjust layout if needed
+                  displayOnForeground: true,
+                  displayOnBackground: true,
                 ),
-                // actionButtons: [
-                //   NotificationActionButton(key: 'ACCEPT', label: 'Accept', color: Pallete.gradient4),
-                //   NotificationActionButton(key: 'DECLINE', label: 'Decline', color: Pallete.gradient3),
-                // ]
+                actionButtons: [
+                  NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default),
+                  NotificationActionButton(key: 'DECLINE', label: 'Decline', actionType: ActionType.DismissAction),
+                ]
             );
           }
 
@@ -130,18 +134,24 @@ class BackJanusController{
         }
         if (data is SipAcceptedEvent) {
           debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT RECEIVED----------------------------------------------");
-          await sip?.handleRemoteJsep(even.jsep);
+          RTCSessionDescription? remoteOffer = even.jsep;
+          await sip?.handleRemoteJsep(remoteOffer);
           await riseDatabase.setAccepted(1);
           IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipAcceptedEvent');
           debugPrint("--------------------------------------INCOMING CALL ACCEPTED EVENT DONE----------------------------------------------");
           // navigationProvider.showOnCallWidget();
         }
+
+        if(data is SipUnRegisteredEvent){
+          debugPrint("--------------------------------------UN-REGISTERED EVENT RECEIVED----------------------------------------------");
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send('SipUnRegisteredEvent');
+          debugPrint("--------------------------------------UN-REGISTERED EVENT DONE----------------------------------------------");
+        }
+
         if (data is SipHangupEvent) {
+          // sip?.dispose();
+          // session.dispose();
           await sip?.webRTCHandle?.peerConnection?.close();
-          sip?.webRTCHandle?.peerConnection = null;
-          print("local stream start");
-          print(mediaStream);
-          print("local stream end");
           await stopAllTracksAndDispose(mediaStream);
           riseDatabase.setAccepted(0);
           debugPrint("--------------------------------------HANGUP EVENT RECEIVED----------------------------------------------");
@@ -169,6 +179,7 @@ class BackJanusController{
           debugPrint("--------------------------------------SipMissedCallEvent EVENT RECEIVED----------------------------------------------");
         }
         if (data is SipProceedingEvent) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED----------------------------------------------");
           debugPrint("--------------------------------------Proceeding | Ringing----------------------------------------------");
           debugPrint("--------------------------------------SipProceedingEvent EVENT RECEIVED DONE----------------------------------------------");
@@ -178,11 +189,13 @@ class BackJanusController{
           debugPrint("--------------------------------------SipProgressEvent EVENT RECEIVED----------------------------------------------");
         }
         if (data is SipRingingEvent) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED----------------------------------------------");
           debugPrint("--------------------------------------Ringing----------------------------------------------");
           debugPrint("--------------------------------------SipRingingEvent EVENT RECEIVED DONE----------------------------------------------");
         }
         if (data is SipAcceptedEventResult) {
+          await sip?.handleRemoteJsep(even.jsep);
           debugPrint("--------------------------------------SipAcceptedEventResult EVENT RECEIVED----------------------------------------------");
         }
       }, onError: (error) async {
@@ -216,7 +229,8 @@ class BackJanusController{
   hangup() async{
     debugPrint("**********************************Hangup Call*************************************");
     await sip?.webRTCHandle?.peerConnection?.close();
-    sip?.webRTCHandle?.peerConnection = null;
+    // sip?.dispose();
+    // session.dispose();
     await sip?.hangup();
   }
 
@@ -306,18 +320,17 @@ class BackJanusController{
         element.track?.enableSpeakerphone(mode);
       }
     });
+
   }
 
 
 
 
   makeCall(mailbox, androidHost) async {
-
     await riseDatabase.setActive("outgoing");
     var newValue = "sip:$mailbox@$androidHost";
     debugPrint("Passing to make call : $newValue");
     await sip?.initializeWebRTCStack();
-
     await localStreamInitializer();
     var offer = await sip?.createOffer(videoRecv: false, audioRecv: true);
     await sip?.call(newValue, offer: offer, autoAcceptReInvites: false);
@@ -330,16 +343,11 @@ class BackJanusController{
   }
 
   accept() async{
-    if (rtc == null) {
-      throw Exception("RTCSessionDescription not available. Ensure proper retrieval from incoming call event.");
-    }
-
-    print("the rtc is : $rtc");
-    await sip?.handleRemoteJsep(rtc);
     await localStreamInitializer();
-
+    await sip?.handleRemoteJsep(rtc);
     var answer = await sip?.createAnswer();
     await sip?.accept(sessionDescription: answer);
     debugPrint("**********************************Call Accepted*************************************");
   }
 }
+

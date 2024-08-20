@@ -27,20 +27,20 @@ class NavigationProvider extends ChangeNotifier{
 
   void showOnCallWidget() {
     _showOnCall = true;
-    _selectedIndex = 5;
+    _selectedIndex = 4;
     notifyListeners();
   }
 
   void showFireAlarmWidget() {
     _showFireAlarm = true;
-    _selectedIndex = 5;
+    _selectedIndex = 4;
     notifyListeners();
   }
 
 
   void hideFireAlarmWidget() {
     _showFireAlarm = false;
-    if (_selectedIndex == 5) {
+    if (_selectedIndex == 4) {
       _selectedIndex = 0;
     }
     notifyListeners();
@@ -50,7 +50,7 @@ class NavigationProvider extends ChangeNotifier{
 
   void hideOnCallWidget() {
     _showOnCall = false;
-    if (_selectedIndex == 5) {
+    if (_selectedIndex == 4) {
       _selectedIndex = 0;
     }
     notifyListeners();
