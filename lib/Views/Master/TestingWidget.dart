@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rise/Components/DialButton.dart';
 import 'package:rise/Controllers/ApiController.dart';
+import 'package:rise/Resources/Function.dart';
 import 'package:rise/Resources/Pallete.dart';
 
 class TestingWidget extends StatefulWidget {
@@ -20,8 +21,7 @@ class _TestingWidgetState extends State<TestingWidget> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           ElevatedButton(onPressed: () async {
-
-
+            await invoke("detachPlugin");
             // const platform = MethodChannel('com.example.app/call_notification');
             // platform.invokeMethod("sendIncomingCall", {"extension" : "6003"});
           }, child: const Text("TEST"))

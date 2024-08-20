@@ -7,6 +7,7 @@ import 'dart:ui';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -74,10 +75,13 @@ void onStart(ServiceInstance service) async {
 
 
 
+
         await backJanus.initJanusClient();
 
-        Future.delayed(const Duration(seconds: 5), () async{
+        if(registrationStatus == "registered"){
           await backJanus.unRegister();
+        }
+        Future.delayed(const Duration(seconds: 5), () async{
           await backJanus.autoRegister();
         });
       } else {
@@ -91,7 +95,10 @@ void onStart(ServiceInstance service) async {
               duration: const Duration(seconds: 10)
           ),
         );
-        IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipUnRegisteredEvent");
+        Future.delayed(const Duration(seconds: 5), () async{
+          IsolateNameServer.lookupPortByName('mainIsolate')?.send("SipUnRegisteredEvent");
+        });
+
         debugPrint("Not connected to WiFi");
       }
     });

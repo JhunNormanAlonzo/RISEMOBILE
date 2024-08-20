@@ -102,6 +102,7 @@ class BackgroundWebsocket {
 
 
 
+
   Stream get stream => _channel!.stream;
   WebSocketChannel? get channel => _channel;
 }

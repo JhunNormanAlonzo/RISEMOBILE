@@ -207,28 +207,34 @@ class MainFrameState extends State<MainFrame>{
 
     Future.delayed(const Duration(seconds: 5), () async{
       debugPrint("auto registering on init state");
+      debugPrint("sync registration...");
+      await api.syncSipRegistration();
+      debugPrint("done ...");
+      final registrationStatus = await api.checkSipRegistration();
+      debugPrint("future delay 5 seconds ...");
+      debugPrint("checking registration status");
+      debugPrint("status : $registrationStatus");
+      if(registrationStatus == "unregistered"){
+        final mailbox = await storageController.getData("mailboxNumber");
+        final password = await storageController.getData("password");
+        final androidHost = await api.getAndroidHost();
 
-      final mailbox = await storageController.getData("mailboxNumber");
-      final password = await storageController.getData("password");
-      final androidHost = await api.getAndroidHost();
+        debugPrint("the password is : $password");
 
-      debugPrint("the password is : $password");
-
-      if(password.isEmpty){
-        debugPrint("the password is null");
-      }else{
-        debugPrint("the password is not null");
+        if(password.isEmpty){
+          debugPrint("the password is null");
+        }else{
+          debugPrint("the password is not null");
+        }
+        if (mailbox.isNotEmpty && password.isNotEmpty && androidHost!.isNotEmpty) {
+          FlutterBackgroundService().invoke('autoRegister');
+        } else {
+          // toast.warning(context, 'mailbox : $mailbox | password:${password.isEmpty ? "none" : password}  \n androidHost=$androidHost');
+          setState(() {
+            showSipStatus = true;
+          });
+        }
       }
-      if (mailbox.isNotEmpty && password.isNotEmpty && androidHost!.isNotEmpty) {
-        FlutterBackgroundService().invoke('autoRegister');
-      } else {
-        // toast.warning(context, 'mailbox : $mailbox | password:${password.isEmpty ? "none" : password}  \n androidHost=$androidHost');
-        setState(() {
-          showSipStatus = true;
-        });
-      }
-
-
     });
   }
 
@@ -278,7 +284,7 @@ class MainFrameState extends State<MainFrame>{
     final navigationProvider = Provider.of<NavigationProvider>(context);
     final List<Widget> widgets = [
       const DialpadWidget(),
-       // TestingWidget(),
+       // const TestingWidget(),
       // const MessagesWidget(),
       const CallHistoryWidget(),
       const MessagesWidget(),

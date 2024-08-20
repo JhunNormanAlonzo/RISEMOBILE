@@ -43,6 +43,12 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        release {
+            v2SigningEnabled false
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
@@ -55,3 +61,5 @@ android {
 flutter {
     source '../..'
 }
+
+dependencies {}
